@@ -156,6 +156,8 @@ def main() -> int:
     subprocess_source = Path("lib/classes/subprocess_pipe.py").read_text(encoding="utf-8")
     if "def _cancellation_requested(" not in subprocess_source or "self.stop()" not in subprocess_source:
         errors.append("SubprocessPipe belum dapat menghentikan proses saat cancel")
+    if "executable_name = os.path.basename(str(self.cmd[0])).lower()" not in subprocess_source:
+        errors.append("Deteksi executable FFmpeg masih case-sensitive di Windows")
     if "self.process.wait(timeout=2)" not in subprocess_source:
         errors.append("SubprocessPipe terminate belum punya fallback kill")
 

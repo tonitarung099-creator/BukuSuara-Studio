@@ -25,6 +25,12 @@ def main() -> int:
         except py_compile.PyCompileError as exc:
             errors.append(f"Syntax error {source}: {exc.msg}")
 
+    gemini_source = Path("lib/classes/gemini_agent.py").read_text(encoding="utf-8")
+    if "MAX_API_KEYS = 100" not in gemini_source:
+        errors.append("Gemini agent belum membatasi maksimal 100 API key")
+    if "time.time() + 300" not in gemini_source:
+        errors.append("Gemini agent belum memiliki cooldown rotasi key limit")
+
     requirements = Path("requirements.txt").read_text(encoding="utf-8")
     if "./ext/py/demucs" in requirements:
         errors.append("requirements.txt masih memakai dependency Demucs lokal yang tidak portable")

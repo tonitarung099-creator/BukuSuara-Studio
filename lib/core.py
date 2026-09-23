@@ -3205,9 +3205,15 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
 
     def _export_audio(combined_audio:str, metadata_file:str, final_file:str, block_indices:set=None, part_num:int=None)->bool:
         final_path = Path(final_file)
-        temp_audio = str(final_path.with_name(f'.{final_path.stem}.part{final_path.suffix}'))
+        temp_token = f"{session_id}-{os.getpid()}"
+        temp_audio = str(
+            final_path.with_name(f'.{final_path.stem}.{temp_token}.part{final_path.suffix}')
+        )
         final_vtt = os.path.join(session['audiobooks_dir'], f'{final_path.stem}.vtt')
-        temp_vtt = final_vtt + '.part'
+        temp_vtt_path = Path(final_vtt)
+        temp_vtt = str(
+            temp_vtt_path.with_name(f'.{temp_vtt_path.stem}.{temp_token}.part{temp_vtt_path.suffix}')
+        )
         for stale in (temp_audio, temp_vtt):
             try:
                 if os.path.exists(stale):

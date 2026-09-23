@@ -202,6 +202,14 @@ def main() -> int:
             errors.append("Helper browser belum menunggu server dengan timeout")
 
     launcher_source = Path("ebook2audiobook.cmd").read_text(encoding="utf-8", errors="ignore").replace("\r\n", "\n")
+    if 'set "ARGS=%*"' in launcher_source or "%ARGS%" in launcher_source:
+        errors.append("Launcher masih menyimpan raw %* ke ARGS")
+    if "call :parse_args %*" not in launcher_source or ":is_cli_option\n" not in launcher_source:
+        errors.append("Parser launcher belum mengisolasi SHIFT dalam subroutine")
+    if 'if "%HEADLESS_REQUESTED%"=="0" (' not in launcher_source:
+        errors.append("Mode GUI launcher belum memakai hasil parse --headless")
+    if "echo %~2 | findstr" in launcher_source:
+        errors.append("Parser launcher masih mem-pipe nilai argumen mentah ke CMD")
     if 'where.exe /Q python >nul 2>&1' not in launcher_source:
         errors.append("Launcher Windows masih memanggil Python sebelum bootstrap")
     if ':check_scoop_buckets\nsetlocal EnableDelayedExpansion' not in launcher_source:

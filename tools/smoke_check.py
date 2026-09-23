@@ -77,6 +77,8 @@ def main() -> int:
         errors.append("Pipeline DOCX/TXT belum terhubung ke Gemini pronunciation")
     if "def disambiguate_directory_ebook_name(" not in core_source:
         errors.append("Directory Mode belum melindungi cache/output dari stem ebook yang sama")
+    if "Ebook source is not a readable file." not in core_source:
+        errors.append("Core masih bisa menerima directory sebagai ebook source")
     if "ebook_name = disambiguate_directory_ebook_name" not in core_source:
         errors.append("Disambiguasi nama Directory Mode belum terhubung ke convert_ebook")
     if "def session_has_active_client(" not in core_source:
@@ -139,6 +141,8 @@ def main() -> int:
         errors.append("Restore session belum aman saat data awal None/tidak valid")
     if "requested_session_id = data.get('id')" not in gradio_source or "session_has_active_client(existing_session" not in gradio_source:
         errors.append("Restore session masih dapat menimpa sesi yang aktif di tab lain")
+    if "seen_paths = set()" not in gradio_source:
+        errors.append("GUI Directory Mode belum mencegah ebook path duplikat")
     if "'error': str(e)" not in gradio_source:
         errors.append("Autosave session masih mencoba menyerialisasi object Exception mentah")
     if "classes = list(attr) if attr is not None" not in gradio_source:

@@ -120,6 +120,8 @@ def main() -> int:
         errors.append("Cover export belum memvalidasi path file")
     if "MAX_TERMS_PER_REQUEST = 60" not in pronunciation_source:
         errors.append("Batch pronunciation Gemini belum dibatasi")
+    if "PRONUNCIATION_MAX_OUTPUT_TOKENS = 4096" not in pronunciation_source:
+        errors.append("Output Gemini pronunciation masih berisiko terlalu kecil/truncated")
     if '"reviewed": sorted(self.reviewed)' not in pronunciation_source:
         errors.append("Cache keputusan pronunciation belum menyimpan istilah yang sudah diperiksa")
     if '"reviewed_context": dict(sorted(self.reviewed_context.items()))' not in pronunciation_source:

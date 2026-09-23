@@ -159,16 +159,26 @@ class Fairseq(TTSUtils, TTSRegistry, name='fairseq'):
                                     else:
                                         semitones = 0
                                     self.params['semitones'][self.params['current_voice']] = semitones
-                                if semitones > 0:
+                                if semitones != 0:
                                     try:
+                                        sox = shutil.which('sox')
+                                        if not sox:
+                                            error = 'SoX is required for voice pitch adaptation but was not found.'
+                                            DependencyError(error)
+                                            return False, error
                                         cmd = [
-                                            shutil.which('sox'), tmp_in_wav,
+                                            sox, tmp_in_wav,
                                             '-r', str(self.params['samplerate']), tmp_out_wav,
                                             'pitch', str(semitones * 100)
                                         ]
-                                        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                                        subprocess.run(
+                                            cmd,
+                                            stdout=subprocess.DEVNULL,
+                                            stderr=subprocess.DEVNULL,
+                                            check=True,
+                                        )
                                     except subprocess.CalledProcessError as e:
-                                        error = f'Subprocess error: {e.stderr}'
+                                        error = f'SoX pitch adaptation failed with exit code {e.returncode}'
                                         DependencyError(error)
                                         return False, error
                                     except FileNotFoundError as e:

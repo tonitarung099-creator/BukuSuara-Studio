@@ -187,6 +187,15 @@ def main() -> int:
     if "self.process.wait(timeout=2)" not in subprocess_source:
         errors.append("SubprocessPipe terminate belum punya fallback kill")
 
+    browser_helper_path = Path(".bh.ps1")
+    if not browser_helper_path.is_file():
+        errors.append("Helper browser Windows .bh.ps1 belum tersedia")
+        browser_helper_source = ""
+    else:
+        browser_helper_source = browser_helper_path.read_text(encoding="utf-8", errors="ignore")
+        if "ConnectAsync" not in browser_helper_source or "TimeoutSeconds" not in browser_helper_source:
+            errors.append("Helper browser belum menunggu server dengan timeout")
+
     launcher_source = Path("ebook2audiobook.cmd").read_text(encoding="utf-8", errors="ignore").replace("\r\n", "\n")
     if 'where.exe /Q python >nul 2>&1' not in launcher_source:
         errors.append("Launcher Windows masih memanggil Python sebelum bootstrap")

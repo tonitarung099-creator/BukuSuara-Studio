@@ -53,6 +53,9 @@ def main() -> int:
     wav_branch = core_source.split("if session['output_format'] == 'wav':", 1)[1].split("elif session['output_format'] == 'aac':", 1)[0] if "if session['output_format'] == 'wav':" in core_source else ""
     if "'-f', 'ffmetadata', '-i', metadata_file" not in wav_branch or "'-map_metadata', '1'" not in wav_branch:
         errors.append("WAV re-encode belum membawa FFMETADATA")
+    aac_branch = core_source.split("elif session['output_format'] == 'aac':", 1)[1].split("elif session['output_format'] == 'flac':", 1)[0] if "elif session['output_format'] == 'aac':" in core_source else ""
+    if "'-write_id3v2', '1'" not in aac_branch or "'-map_metadata', '1'" not in aac_branch:
+        errors.append("AAC ADTS belum menulis metadata sebagai ID3v2")
     if "Unsupported output format:" not in core_source or "Unsupported output channel:" not in core_source:
         errors.append("Core belum memvalidasi format/channel output")
     if "Output split hours must be at least 1." not in core_source or "Invalid output split hours:" not in core_source:

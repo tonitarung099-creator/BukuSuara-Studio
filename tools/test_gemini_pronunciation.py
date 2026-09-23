@@ -52,6 +52,17 @@ def main() -> None:
         assert "Yu-tub" in processed[0]
         assert "rumah tanpa mengubah isi cerita" in processed[1]
 
+        processor.cache = {"George": "Jorj", "Jorj": "Yor"}
+        collision = processor.apply_dictionary(["George bertemu Jorj."])[0]
+        assert collision == "Jorj bertemu Yor.", "replacement must be atomic, not recursive"
+
+        processor.cache = {
+            "George": "Jorj",
+            "Greenwich": "Grenij",
+            "YouTube": "Yu-tub",
+            "Microsoft Edge": "Mai-kro-soft Ej",
+        }
+
         processor._save_cache()
         assert Path(tmp, "gemini_pronunciation_map.json").exists()
         restored = GeminiPronunciationProcessor("ci-test", tmp)

@@ -59,7 +59,7 @@ IPA_REMAINING_PATTERN = re.compile(
     r']+'
 )
 
-default_tts_engine = TTS_ENGINES['XTTS']
+default_tts_engine = TTS_ENGINES['FAIRSEQ']
 default_fine_tuned = 'internal'
 default_vc_model = TTS_VOICE_CONVERSION['knnvc']['path']
 default_voice_detection_model = 'drewThomasson/segmentation'

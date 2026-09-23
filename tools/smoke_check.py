@@ -43,6 +43,8 @@ def main() -> int:
         errors.append("Progress ekstraksi custom model masih berisiko melewati 100%")
     if "Missing required audio tool(s)" not in core_source:
         errors.append("Export audio belum memvalidasi ffmpeg/ffprobe sebelum subprocess")
+    if "never the active session" not in core_source or "if dir_name in current_user_dirs:" not in core_source:
+        errors.append("Cleanup session lama masih berisiko menghapus sesi aktif")
     if "def preprocess_gemini_pronunciation(" not in core_source:
         errors.append("Pipeline DOCX/TXT belum terhubung ke Gemini pronunciation")
     if "cover_result is not False" not in core_source:

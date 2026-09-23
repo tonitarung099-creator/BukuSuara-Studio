@@ -1,5 +1,10 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from lib.classes.gemini_agent import MAX_API_KEYS, parse_api_keys
 from lib.classes.gemini_pronunciation import GeminiPronunciationProcessor

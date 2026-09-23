@@ -19,13 +19,26 @@ def main() -> int:
             f"Default tidak kompatibel: bahasa={default_language_code}, engine={default_tts_engine}"
         )
 
-    for source in ("lib/classes/gemini_agent.py", "lib/gradio.py"):
+    for source in (
+        "lib/classes/gemini_agent.py",
+        "lib/classes/gemini_pronunciation.py",
+        "lib/core.py",
+        "lib/gradio.py",
+    ):
         try:
             py_compile.compile(source, doraise=True)
         except py_compile.PyCompileError as exc:
             errors.append(f"Syntax error {source}: {exc.msg}")
 
     gemini_source = Path("lib/classes/gemini_agent.py").read_text(encoding="utf-8")
+    pronunciation_source = Path("lib/classes/gemini_pronunciation.py").read_text(encoding="utf-8")
+    core_source = Path("lib/core.py").read_text(encoding="utf-8")
+    if "def preprocess_gemini_pronunciation(" not in core_source:
+        errors.append("Pipeline DOCX/TXT belum terhubung ke Gemini pronunciation")
+    if "MAX_TERMS_PER_REQUEST = 60" not in pronunciation_source:
+        errors.append("Batch pronunciation Gemini belum dibatasi")
+    if '"reviewed": sorted(self.reviewed)' not in pronunciation_source:
+        errors.append("Cache keputusan pronunciation belum menyimpan istilah yang sudah diperiksa")
     if "MAX_API_KEYS = 100" not in gemini_source:
         errors.append("Gemini agent belum membatasi maksimal 100 API key")
     if "time.time() + 300" not in gemini_source:

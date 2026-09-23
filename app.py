@@ -372,7 +372,7 @@ Default to config.json model.""")
                 error = 'Error: You can only specify one of --ebook, --ebooks_dir, or --text in headless mode.'
             else:
                 if args.get('voice'):
-                    if os.path.exists(args['voice']):
+                    if os.path.isfile(args['voice']):
                         args['voice'] = os.path.abspath(args['voice'])
                     else:
                         error = f"Error: The provided --voice {args['voice']} does not exist."
@@ -381,20 +381,20 @@ Default to config.json model.""")
                         args['custom_model'] = os.path.abspath(args['custom_model'])
                     else:
                         error = f"Error: The provided --custom_model {args['custom_model']} does not exist."
-                if args.get('output_dir', None) is not None and not os.path.exists(args['output_dir']):
-                    error = 'Error: --output_dir path does not exist.'              
-                elif args.get('ebooks_dir', None) is not None:
+                if not error and args.get('output_dir', None) is not None and not os.path.isdir(args['output_dir']):
+                    error = 'Error: --output_dir must be an existing directory.'
+                if not error and args.get('ebooks_dir', None) is not None:
                     args['ebook_mode'] = 'directory'
                     args['ebooks_dir'] = os.path.abspath(args['ebooks_dir'])
-                    if not os.path.exists(args['ebooks_dir']):
-                        error = f"Error: The provided --ebooks_dir {args['ebooks_dir']} does not exist."                 
+                    if not os.path.isdir(args['ebooks_dir']):
+                        error = f"Error: The provided --ebooks_dir {args['ebooks_dir']} is not a directory."
                     else:
                         # --- voice_map: load the optional per-file override map ---
                         voice_map:dict = {}
                         if args.get('voice_map'):
                             voice_map_path = os.path.abspath(args['voice_map'])
-                            if not os.path.exists(voice_map_path):
-                                error = f'Error: The provided --voice_map {voice_map_path} does not exist.'
+                            if not os.path.isfile(voice_map_path):
+                                error = f'Error: The provided --voice_map {voice_map_path} is not a file.'
                             else:
                                 try:
                                     with open(voice_map_path, 'r', encoding='utf-8') as f:
@@ -444,18 +444,18 @@ Default to config.json model.""")
                                     else:
                                         error = progress_status
                                         break
-                elif args.get('ebook', None) is not None:
+                elif not error and args.get('ebook', None) is not None:
                     args['ebook_mode'] = 'single'
                     args['ebook_src'] = os.path.abspath(args['ebook'])
-                    if not os.path.exists(args['ebook_src']):
-                        error = f"Error: The provided --ebook {args['ebook_src']} does not exist."
+                    if not os.path.isfile(args['ebook_src']):
+                        error = f"Error: The provided --ebook {args['ebook_src']} is not a file."
                     else:
                         progress_status, passed = c.convert_ebook(args)
                         c.context.sessions[args['id']]['status'] = c.status_tags['READY']
                         c.reset_ebook_session(args['id'], force=True, filter_keys=False)
                         if not passed:
                             error = progress_status
-                elif args.get('text', None) is not None:
+                elif not error and args.get('text', None) is not None:
                     args['ebook_mode'] = 'text'
                     args['ebook_textarea'] = args['text'].strip()
                     if not args['ebook_textarea']:
@@ -468,7 +468,7 @@ Default to config.json model.""")
                         c.reset_ebook_session(args['id'], force=True, filter_keys=False)
                         if not passed:
                             error = progress_status
-                else:
+                elif not error:
                     error = 'Error: In headless mode, you must specify either an ebook file using --ebook, ebook directory using --ebooks_dir or a raw text using --text.'
         else:
             args['is_gui_process'] = True

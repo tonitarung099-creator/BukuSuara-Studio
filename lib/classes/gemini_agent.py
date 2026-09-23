@@ -221,19 +221,17 @@ class GeminiAgent:
         for index, key in self._available_keys():
             try:
                 client = genai.Client(api_key=key)
-                response = client.models.generate_content(
-                    model=self.model,
-                    contents=contents,
-                    config=types.GenerateContentConfig(
-                        system_instruction=system_instruction,
-                        tools=tools,
-                        temperature=0.2,
-                        max_output_tokens=self.max_output_tokens,
-                        automatic_function_calling=types.AutomaticFunctionCallingConfig(
-                            maximum_remote_calls=self.max_remote_calls
-                        ),
+                config = types.GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    tools=tools,
+                    temperature=0.2,
+                    max_output_tokens=self.max_output_tokens,
+                    automatic_function_calling=types.AutomaticFunctionCallingConfig(
+                        maximum_remote_calls=self.max_remote_calls
                     ),
                 )
+                chat = client.chats.create(model=self.model, config=config)
+                response = chat.send_message(contents)
                 reply = (response.text or "").strip() or "Perintah selesai."
                 usage = getattr(response, "usage_metadata", None)
                 input_tokens = getattr(usage, "prompt_token_count", None) if usage else None

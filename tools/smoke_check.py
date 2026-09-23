@@ -107,6 +107,14 @@ def main() -> int:
         if "check=True" not in engine_text:
             errors.append(f"{engine_source}: kegagalan SoX masih bisa lolos diam-diam")
 
+    device_installer_source = Path("lib/classes/device_installer.py").read_text(encoding="utf-8")
+    if "DEVICE_INSTALLER_ROOT = Path(__file__).resolve().parents[2]" not in device_installer_source:
+        errors.append("DeviceInstaller masih bergantung pada working directory")
+    if "DEVICE_INSTALLER_ROOT / 'voices'" not in device_installer_source:
+        errors.append("Bootstrap voice belum dipatok ke folder aplikasi")
+    if "DEVICE_INSTALLER_ROOT / 'detect_gpus.py'" not in device_installer_source:
+        errors.append("GPU probe masih mencari detect_gpus.py dari working directory")
+
     requirements = Path("requirements.txt").read_text(encoding="utf-8")
     if "./ext/py/demucs" in requirements:
         errors.append("requirements.txt masih memakai dependency Demucs lokal yang tidak portable")

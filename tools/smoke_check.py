@@ -51,6 +51,8 @@ def main() -> int:
         errors.append("Checksum sumber masih berisiko dikomit sebelum parse berhasil")
     if "def ffmeta_escape(" not in core_source:
         errors.append("Metadata FFmpeg belum meng-escape karakter khusus")
+    if "return _fail(msg)" not in core_source or "return _fail(error)" not in core_source:
+        errors.append("Finalize masih bisa meninggalkan status CONVERTING setelah pembatalan/error awal")
     if "clean_title = ffmeta_escape(" not in core_source:
         errors.append("Judul chapter FFmpeg belum memakai escaping metadata yang konsisten")
     if "def preprocess_gemini_pronunciation(" not in core_source:

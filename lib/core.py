@@ -3935,8 +3935,8 @@ def convert_ebook(args:dict)->tuple:
                 elif not os.path.splitext(args['ebook_src'])[1]:
                     error = f"{args['ebook_src']} needs a format extension."
                     return error, False
-                elif not os.path.exists(args['ebook_src']):
-                    error = 'File does not exist or Directory empty.'
+                elif not os.path.isfile(args['ebook_src']):
+                    error = 'Ebook source is not a readable file.'
                     return error, False
                 session['ebook_src'] = str(args['ebook_src'])
                 ebook_file = strip_invalid_filename_characters(Path(session['ebook_src']).name)

@@ -39,6 +39,8 @@ def main() -> int:
         errors.append("Custom model ZIP belum menolak required filename yang ambigu")
     if "progress_bar(t.n / files_length" not in core_source:
         errors.append("Progress ekstraksi custom model masih berisiko melewati 100%")
+    if "Missing required audio tool(s)" not in core_source:
+        errors.append("Export audio belum memvalidasi ffmpeg/ffprobe sebelum subprocess")
     if "def preprocess_gemini_pronunciation(" not in core_source:
         errors.append("Pipeline DOCX/TXT belum terhubung ke Gemini pronunciation")
     if "cover_result is not False" not in core_source:

@@ -735,6 +735,152 @@ def build_interface(args:dict)->gr.Blocks:
                     0% { transform: rotate(0deg); }
                     100% { transform: rotate(360deg); }
                 }
+
+                /* BukuSuara responsive safety: prevent flex children from overlapping. */
+                #gr_group_main,
+                #gr_group_main *,
+                #gr_group_blocks,
+                #gr_group_blocks * {
+                    box-sizing: border-box !important;
+                }
+                #gr_group_main .gradio-row > *,
+                #gr_group_main .gradio-column,
+                #gr_group_blocks .gradio-row > *,
+                #gr_group_blocks .gradio-column,
+                .responsive-row > *,
+                .responsive-col {
+                    min-width: 0 !important;
+                }
+                #gr_tabs {
+                    min-width: 0 !important;
+                    max-width: 100% !important;
+                    overflow-x: hidden !important;
+                }
+                #gr_tabs > div:first-child {
+                    max-width: 100% !important;
+                    overflow-x: auto !important;
+                    overflow-y: hidden !important;
+                    scrollbar-width: thin !important;
+                }
+                #gr_tab_gemini_agent {
+                    min-width: 0 !important;
+                    max-width: 100% !important;
+                    overflow-x: hidden !important;
+                }
+                #gr_tab_gemini_agent p,
+                #gr_tab_gemini_agent li,
+                #gr_tab_gemini_agent textarea,
+                #gr_tab_gemini_agent input,
+                #gr_gemini_status textarea {
+                    overflow-wrap: anywhere !important;
+                    word-break: break-word !important;
+                }
+                #gr_row_gemini_config,
+                #gr_row_gemini_prompt {
+                    align-items: stretch !important;
+                    gap: 10px !important;
+                    max-width: 100% !important;
+                }
+                #gr_gemini_send {
+                    align-self: stretch !important;
+                    max-width: 140px !important;
+                }
+                #gr_row_output_format,
+                #gr_row_voice_player,
+                #gr_row_audiobook_list,
+                #gr_row_session {
+                    max-width: 100% !important;
+                }
+
+                @media (max-width: 1000px) {
+                    #gr_row_tab_main,
+                    #gr_row_gemini_config,
+                    #gr_row_gemini_prompt,
+                    #gr_row_output_format {
+                        flex-wrap: wrap !important;
+                    }
+                    #gr_col_1,
+                    #gr_col_2,
+                    #gr_col_gemini_keys,
+                    #gr_gemini_model,
+                    #gr_gemini_prompt {
+                        flex: 1 1 320px !important;
+                        width: 100% !important;
+                        max-width: 100% !important;
+                    }
+                    #gr_gemini_send {
+                        flex: 0 0 110px !important;
+                    }
+                    .no-wrap {
+                        flex-wrap: wrap !important;
+                    }
+                }
+
+                @media (max-width: 700px) {
+                    .gr-tab {
+                        padding-left: 0 !important;
+                        padding-right: 0 !important;
+                    }
+                    .gr-col {
+                        padding-left: 2px !important;
+                        padding-right: 2px !important;
+                    }
+                    .gr-group-no-col,
+                    .gr-group-convert-btn {
+                        padding-right: 4px !important;
+                        margin-left: 0 !important;
+                        margin-right: 0 !important;
+                    }
+                    #gr_row_tab_main,
+                    #gr_row_gemini_config,
+                    #gr_row_gemini_prompt,
+                    #gr_row_output_format,
+                    #gr_row_language,
+                    #gr_row_audiobook_list,
+                    #gr_row_session {
+                        flex-direction: column !important;
+                        flex-wrap: nowrap !important;
+                        gap: 8px !important;
+                    }
+                    #gr_col_1,
+                    #gr_col_2,
+                    #gr_col_gemini_keys,
+                    #gr_gemini_model,
+                    #gr_gemini_prompt,
+                    #gr_gemini_send,
+                    #gr_output_format_list,
+                    #gr_output_channel_list,
+                    #gr_group_output_split,
+                    #gr_session,
+                    #gr_audiobook_list {
+                        width: 100% !important;
+                        max-width: 100% !important;
+                        min-width: 0 !important;
+                        flex: 1 1 auto !important;
+                    }
+                    #gr_gemini_send {
+                        min-height: 44px !important;
+                    }
+                    #gr_row_voice_player {
+                        flex-wrap: wrap !important;
+                    }
+                    #gr_row_voice_player .small-btn,
+                    #gr_row_voice_player .small-btn-red,
+                    #gr_row_audiobook_list .small-btn,
+                    #gr_row_audiobook_list .small-btn-red,
+                    #gr_row_session .small-btn-lock {
+                        flex: 0 0 60px !important;
+                        width: 60px !important;
+                    }
+                    #gr_group_blocks .no-wrap {
+                        flex-wrap: wrap !important;
+                        gap: 6px !important;
+                    }
+                    #gr_group_blocks .accordion-block-voice-list {
+                        flex: 1 1 220px !important;
+                        min-width: 0 !important;
+                    }
+                }
             </style>
         '''
         
@@ -947,8 +1093,8 @@ Chat agent tidak mengirim seluruh isi buku. Untuk **DOCX/TXT Bahasa Indonesia**,
 
 > Maksimal **100 API key**. Pisahkan key dengan koma, titik koma, atau baris baru. Saat key kena limit/error sementara, agent otomatis mencoba key berikutnya. Limit Gemini tetap berlaku per project.
                         ''')
-                        with gr.Row():
-                            with gr.Column(scale=2):
+                        with gr.Row(elem_id='gr_row_gemini_config', elem_classes=['responsive-row']):
+                            with gr.Column(elem_id='gr_col_gemini_keys', elem_classes=['responsive-col'], scale=2, min_width=0):
                                 gr_gemini_api_keys = gr.Textbox(
                                     label='API Key Gemini (maks. 100)',
                                     type='password',
@@ -965,11 +1111,13 @@ Chat agent tidak mengirim seluruh isi buku. Untuk **DOCX/TXT Bahasa Indonesia**,
                                 )
                             gr_gemini_model = gr.Dropdown(
                                 label='Model',
+                                elem_id='gr_gemini_model',
                                 choices=FREE_TIER_MODELS,
                                 value=DEFAULT_GEMINI_MODEL,
                                 type='value',
                                 interactive=True,
-                                scale=1
+                                scale=1,
+                                min_width=220
                             )
                         gr_gemini_chat = gr.Chatbot(
                             label='Percakapan Agen',
@@ -983,7 +1131,7 @@ Chat agent tidak mengirim seluruh isi buku. Untuk **DOCX/TXT Bahasa Indonesia**,
                             interactive=False,
                             lines=1
                         )
-                        with gr.Row():
+                        with gr.Row(elem_id='gr_row_gemini_prompt', elem_classes=['responsive-row']):
                             gr_gemini_prompt = gr.Textbox(
                                 label='Perintah',
                                 placeholder='Contoh: ubah hasil jadi MP3 mono dan aktifkan pratinjau bab',
@@ -991,7 +1139,7 @@ Chat agent tidak mengirim seluruh isi buku. Untuk **DOCX/TXT Bahasa Indonesia**,
                                 max_lines=4,
                                 scale=5
                             )
-                            gr_gemini_send = gr.Button('Kirim', variant='primary', scale=1)
+                            gr_gemini_send = gr.Button('Kirim', elem_id='gr_gemini_send', variant='primary', scale=1, min_width=90)
 
                         gemini_outputs = [
                             gr_gemini_chat, gr_gemini_prompt, gr_gemini_status,

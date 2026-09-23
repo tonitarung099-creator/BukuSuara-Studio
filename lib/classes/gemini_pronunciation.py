@@ -244,15 +244,15 @@ class GeminiPronunciationProcessor:
     def apply_dictionary(self, blocks: list[str]) -> list[str]:
         if not self.cache:
             return list(blocks)
-        items = sorted(self.cache.items(), key=lambda kv: len(kv[0]), reverse=True)
-        out: list[str] = []
-        for text in blocks:
-            result = text
-            for original, alias in items:
-                pattern = re.compile(rf"(?<!\w){re.escape(original)}(?!\w)")
-                result = pattern.sub(alias, result)
-            out.append(result)
-        return out
+        # One-pass replacement is important: an alias produced for one term must
+        # never become input for a second dictionary rule in the same pass.
+        originals = sorted(self.cache.keys(), key=len, reverse=True)
+        alternatives = "|".join(re.escape(term) for term in originals)
+        pattern = re.compile(rf"(?<!\w)(?:{alternatives})(?!\w)")
+        return [
+            pattern.sub(lambda match: self.cache.get(match.group(0), match.group(0)), text)
+            for text in blocks
+        ]
 
     def process_blocks(self, blocks: list[str], progress_callback=None) -> tuple[list[str], dict[str, str]]:
         self.build_dictionary(blocks, progress_callback=progress_callback)

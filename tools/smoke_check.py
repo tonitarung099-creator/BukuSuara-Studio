@@ -49,6 +49,8 @@ def main() -> int:
         errors.append("Stream-copy audio masih dapat mengabaikan pilihan mono/stereo")
     if "Unsupported output format:" not in core_source or "Unsupported output channel:" not in core_source:
         errors.append("Core belum memvalidasi format/channel output")
+    if "Output split hours must be at least 1." not in core_source or "Invalid output split hours:" not in core_source:
+        errors.append("Core belum memvalidasi output_split_hours sebelum proses TTS")
     if "never the active session" not in core_source or "if dir_name in current_user_dirs:" not in core_source:
         errors.append("Cleanup session lama masih berisiko menghapus sesi aktif")
     if "def commit_checksum(" not in core_source or "without committing a changed value prematurely" not in core_source:

@@ -35,6 +35,10 @@ def main() -> int:
     core_source = Path("lib/core.py").read_text(encoding="utf-8")
     if "def preprocess_gemini_pronunciation(" not in core_source:
         errors.append("Pipeline DOCX/TXT belum terhubung ke Gemini pronunciation")
+    if "cover_result is not False" not in core_source:
+        errors.append("Buku tanpa cover masih berisiko menghentikan konversi")
+    if "isinstance(session.get('cover'), str) and os.path.isfile(session['cover'])" not in core_source:
+        errors.append("Cover export belum memvalidasi path file")
     if "MAX_TERMS_PER_REQUEST = 60" not in pronunciation_source:
         errors.append("Batch pronunciation Gemini belum dibatasi")
     if '"reviewed": sorted(self.reviewed)' not in pronunciation_source:

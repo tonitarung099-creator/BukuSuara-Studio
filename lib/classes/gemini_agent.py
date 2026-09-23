@@ -14,6 +14,7 @@ from lib.conf_models import TTS_ENGINES
 
 
 DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite"
+MAX_API_KEYS = 100
 FREE_TIER_MODELS = [
     ("Gemini 3.5 Flash-Lite — hemat (disarankan)", "gemini-3.5-flash-lite"),
     ("Gemini 3.1 Flash-Lite — hemat", "gemini-3.1-flash-lite"),
@@ -31,6 +32,7 @@ _RETRY_MARKERS = (
     "overloaded",
 )
 _KEY_COOLDOWN: dict[str, float] = {}
+_KEY_DISABLED_UNTIL: dict[str, float] = {}
 
 
 def _fingerprint(key: str) -> str:
@@ -38,7 +40,7 @@ def _fingerprint(key: str) -> str:
 
 
 def parse_api_keys(value: str | Iterable[str] | None) -> list[str]:
-    """Parse comma/newline/semicolon separated Gemini API keys without logging them."""
+    """Parse up to MAX_API_KEYS unique Gemini keys without logging them."""
     if value is None:
         env = os.getenv("GEMINI_API_KEYS") or os.getenv("GEMINI_API_KEY") or ""
         value = env
@@ -55,6 +57,8 @@ def parse_api_keys(value: str | Iterable[str] | None) -> list[str]:
             continue
         seen.add(key)
         result.append(key)
+        if len(result) >= MAX_API_KEYS:
+            break
     return result
 
 
@@ -118,15 +122,28 @@ class GeminiAgent:
         now = time.time()
         ready: list[tuple[int, str]] = []
         cooling: list[tuple[int, str]] = []
-        for index, key in enumerate(self.api_keys):
-            until = _KEY_COOLDOWN.get(_fingerprint(key), 0.0)
-            (ready if until <= now else cooling).append((index, key))
+        for index, key in enumerate(self.api_keys[:MAX_API_KEYS]):
+            fingerprint = _fingerprint(key)
+            disabled_until = _KEY_DISABLED_UNTIL.get(fingerprint, 0.0)
+            if disabled_until > now:
+                continue
+            cooldown_until = _KEY_COOLDOWN.get(fingerprint, 0.0)
+            (ready if cooldown_until <= now else cooling).append((index, key))
+        # Jika semua key sedang cooldown, tetap coba berurutan agar pengguna tidak
+        # terjebak pada key pertama. Error berikutnya akan memindahkan ke key lain.
         return ready or cooling
 
     @staticmethod
-    def _is_retryable(exc: Exception) -> bool:
+    def _error_kind(exc: Exception) -> str:
         text = str(exc).lower()
-        return any(marker in text for marker in _RETRY_MARKERS)
+        if any(marker in text for marker in _RETRY_MARKERS):
+            return "quota"
+        if any(marker in text for marker in (
+            "api_key_invalid", "api key not valid", "invalid api key",
+            "401", "unauthenticated", "403", "permission_denied",
+        )):
+            return "invalid_key"
+        return "fatal"
 
     def run(
         self,
@@ -236,7 +253,10 @@ class GeminiAgent:
                 usage = getattr(response, "usage_metadata", None)
                 input_tokens = getattr(usage, "prompt_token_count", None) if usage else None
                 output_tokens = getattr(usage, "candidates_token_count", None) if usage else None
-                status_parts = [f"Model: {self.model}", f"Key aktif: #{index + 1}"]
+                status_parts = [
+                    f"Model: {self.model}",
+                    f"Key aktif: #{index + 1}/{len(self.api_keys)}",
+                ]
                 if input_tokens is not None or output_tokens is not None:
                     status_parts.append(
                         f"Token: masuk {input_tokens or 0} / keluar {output_tokens or 0}"
@@ -251,8 +271,16 @@ class GeminiAgent:
                 )
             except Exception as exc:
                 last_error = exc
-                if self._is_retryable(exc):
-                    _KEY_COOLDOWN[_fingerprint(key)] = time.time() + 60
+                error_kind = self._error_kind(exc)
+                fingerprint = _fingerprint(key)
+                if error_kind == "quota":
+                    # Beri cooldown agar request berikutnya tidak terus menghantam
+                    # key yang baru saja limit, lalu otomatis lanjut ke key berikutnya.
+                    _KEY_COOLDOWN[fingerprint] = time.time() + 300
+                    continue
+                if error_kind == "invalid_key":
+                    # Key salah/tidak berizin dilewati selama 24 jam untuk proses ini.
+                    _KEY_DISABLED_UNTIL[fingerprint] = time.time() + 86400
                     continue
                 break
 
@@ -261,9 +289,9 @@ class GeminiAgent:
             error_text = error_text[:320] + "…"
         return AgentResult(
             reply=(
-                "Gemini belum bisa menjawab. Jika ini error 429/kuota, tunggu kuota pulih "
-                "atau gunakan key dari project lain yang masih memiliki kuota."
+                "Semua API key Gemini yang tersedia belum berhasil dipakai. Jika key-key "
+                "tersebut berasal dari project yang sama, kuotanya memang tetap berbagi."
             ),
-            status=f"Gemini error: {error_text}",
+            status=f"Gemini error setelah mencoba hingga {len(self.api_keys)} key: {error_text}",
             model=self.model,
         )

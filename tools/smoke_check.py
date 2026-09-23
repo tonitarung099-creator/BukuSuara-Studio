@@ -229,6 +229,12 @@ def main() -> int:
         errors.append("Launcher portable masih menulis PATH permanen ke user profile")
     if ":restart_script_admin" in launcher_source:
         errors.append("Launcher portable masih menyimpan jalur restart admin yang tidak dipakai")
+    if 'set "RUNTIME_PROGRAMS=calibre ffmpeg mediainfo espeak-ng sox tesseract"' not in launcher_source:
+        errors.append("Launcher belum memisahkan runtime dan bootstrap tools")
+    if 'if "!PROVISIONED_VERSION!"=="%APP_VERSION%" set "program_list=%RUNTIME_PROGRAMS%"' not in launcher_source:
+        errors.append("Launcher masih mengecek build tools pada env yang sudah current")
+    if 'if not "%PROVISIONED_VERSION%"=="%APP_VERSION%" (' not in launcher_source:
+        errors.append("Versi .provisioned belum dipakai untuk reprovision dependency")
 
     requirements = Path("requirements.txt").read_text(encoding="utf-8")
     if "./ext/py/demucs" in requirements:

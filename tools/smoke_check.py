@@ -50,6 +50,12 @@ def main() -> int:
     if "time.time() + 300" not in gemini_source:
         errors.append("Gemini agent belum memiliki cooldown rotasi key limit")
 
+    conf_source = Path("lib/conf.py").read_text(encoding="utf-8")
+    if "Portable runtime directories must exist" not in conf_source:
+        errors.append("Startup belum membuat folder runtime portable secara otomatis")
+    if "os.makedirs(runtime_dir, exist_ok=True)" not in conf_source:
+        errors.append("Folder runtime portable belum dibuat secara defensif")
+
     requirements = Path("requirements.txt").read_text(encoding="utf-8")
     if "./ext/py/demucs" in requirements:
         errors.append("requirements.txt masih memakai dependency Demucs lokal yang tidak portable")

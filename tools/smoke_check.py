@@ -234,6 +234,10 @@ def main() -> int:
         errors.append("Launcher portable masih mengubah HKCU\\Console")
     if 'set "HOST_PROGRAMS=cmake rustup calibre ffmpeg-shared' in launcher_source:
         errors.append("Launcher masih memaksa ffmpeg-shared walau static FFmpeg didukung")
+    if ":check_ffmpeg_shared" in launcher_source or "scoop uninstall ffmpeg" in launcher_source:
+        errors.append("Launcher portable masih menyimpan helper swap FFmpeg static")
+    if "WindowsApps\\python.exe" in launcher_source or "WindowsApps\\python3.exe" in launcher_source:
+        errors.append("Launcher fallback masih menghapus alias Python WindowsApps")
     if 'set "PORTABLE_BIN=%SAFE_SCRIPT_DIR%\\tools\\bin"' not in launcher_source:
         errors.append("Launcher belum memprioritaskan tool portable lokal")
     if 'ifi "%PODMAN_DESKTOP%"=="0"' in launcher_source:

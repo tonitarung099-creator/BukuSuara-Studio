@@ -3057,6 +3057,7 @@ Chat agent tidak mengirim seluruh isi buku. Untuk **DOCX/TXT Bahasa Indonesia**,
                 try:
                     nonlocal models
                     msg = 'Error while loading saved session. Please try to delete your cookies and refresh the page'
+                    data = data if isinstance(data, Mapping) else {}
                     if not data.get('id', False):
                         session = context.set_session(str(uuid.uuid4()))
                     else:

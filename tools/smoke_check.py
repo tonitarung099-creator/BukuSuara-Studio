@@ -93,8 +93,10 @@ def main() -> int:
         errors.append("Startup Windows masih menolak FFmpeg standalone/static")
     if "APP_ROOT = Path(__file__).resolve().parent" not in app_source:
         errors.append("Asset GUI masih berisiko bergantung pada working directory")
-    if "favicon_path=str(APP_ROOT / 'favicon.ico')" not in app_source:
-        errors.append("Favicon GUI belum dipatok ke folder aplikasi")
+    if "favicon_value = str(favicon_file) if favicon_file.is_file() else None" not in app_source:
+        errors.append("GUI belum aman ketika favicon.ico tidak tersedia")
+    if "0.0.0.0 is a bind address" not in app_source or "127.0.0.1" not in app_source:
+        errors.append("Deteksi port GUI masih memakai target connect yang tidak reliabel")
 
     gradio_source = Path("lib/gradio.py").read_text(encoding="utf-8")
     if "Missing voice must not invalidate the selected ebook." not in gradio_source:

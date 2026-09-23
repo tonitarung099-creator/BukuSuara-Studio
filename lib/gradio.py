@@ -3196,7 +3196,7 @@ Chat agent tidak mengirim seluruh isi buku. Untuk **DOCX/TXT Bahasa Indonesia**,
                 except Exception as e:
                     error = f'_update_gr_save_session(): {e}!'
                     exception_alert(session_id, error)
-                    yield gr.update(), gr.update(value=e), gr.update()
+                    yield gr.update(), gr.update(value={'hash': None, 'error': str(e)}), gr.update()
 
             ################## Events Section
 

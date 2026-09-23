@@ -2501,6 +2501,11 @@ Chat agent tidak mengirim seluruh isi buku. Untuk **DOCX/TXT Bahasa Indonesia**,
                                 return gr.update(), gr.update(interactive=False), back_id, gr.update(value='🔒︎'), None, back_id
                             new_session_dir = os.path.join(tmp_dir, f'proc-{new_session_id}')
                             new_session = context.get_session(new_session_id)
+                            if new_session and session_has_active_client(new_session):
+                                session['status'] = status_tags['SWITCH']
+                                msg = 'Session tersebut sedang aktif di tab/browser lain.'
+                                show_alert(back_id, {"type": "warning", "msg": msg})
+                                return gr.update(), gr.update(), backup_session_id, gr.update(), None, None
                             if os.path.exists(new_session_dir) or new_session:
                                 if not new_session:
                                     new_session = context.set_session(new_session_id)
@@ -3061,10 +3066,15 @@ Chat agent tidak mengirim seluruh isi buku. Untuk **DOCX/TXT Bahasa Indonesia**,
                     nonlocal models
                     msg = 'Error while loading saved session. Please try to delete your cookies and refresh the page'
                     data = data if isinstance(data, Mapping) else {}
-                    if not data.get('id', False):
+                    requested_session_id = data.get('id')
+                    if not requested_session_id:
                         session = context.set_session(str(uuid.uuid4()))
                     else:
-                        session = context.set_session(data.get('id'))
+                        existing_session = context.get_session(requested_session_id)
+                        if existing_session and session_has_active_client(existing_session, allow_hash=req.session_hash):
+                            error = 'Sesi ini sedang aktif di tab/browser lain. Tutup sesi lain sebelum membukanya di sini.'
+                            return gr.update(), gr.update(), gr.update(value=''), _update_gr_glassmask(str=error)
+                        session = existing_session or context.set_session(requested_session_id)
                     if len(active_sessions) == 0 or (data and data.get('status') in (None, status_tags['READY'])):
                         restore_session_from_data(
                             data, session,

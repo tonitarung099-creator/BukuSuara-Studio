@@ -64,6 +64,16 @@ def main() -> int:
         errors.append("Cleanup session lama masih berisiko menghapus sesi aktif")
     if "def commit_checksum(" not in core_source or "without committing a changed value prematurely" not in core_source:
         errors.append("Checksum sumber masih berisiko dikomit sebelum parse berhasil")
+    if "def is_safe_archive_member(" not in core_source:
+        errors.append("EPUB ZIP normalizer belum menolak path member berbahaya")
+    if "duplicate member names are not allowed" not in core_source:
+        errors.append("EPUB ZIP normalizer belum menolak nama member duplikat")
+    normalize_section = core_source.split("def normalize_epub_zip(", 1)[1].split("def convert2epub(", 1)[0] if "def normalize_epub_zip(" in core_source else ""
+    if "shutil.copyfileobj(src, out, length=1024 * 1024)" not in normalize_section:
+        errors.append("EPUB ZIP normalizer masih membaca member penuh ke RAM")
+    if "zf.read(nested_epub)" in normalize_section or "zf.read(name)" in normalize_section:
+        errors.append("EPUB ZIP normalizer masih memakai zf.read untuk payload besar")
+
     if "def ffmeta_escape(" not in core_source:
         errors.append("Metadata FFmpeg belum meng-escape karakter khusus")
     if "published_value = session['metadata'].get('published') or session['metadata'].get('date')" not in core_source:

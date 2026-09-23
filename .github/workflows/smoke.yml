@@ -18,3 +18,7 @@ jobs:
           python-version: '3.12'
       - name: Check BukuSuara defaults
         run: python tools/smoke_check.py
+      - name: Install minimal Gemini test dependency
+        run: python -m pip install "google-genai>=2.24.0,<3.0.0"
+      - name: Test Gemini pronunciation logic
+        run: python tools/test_gemini_pronunciation.py

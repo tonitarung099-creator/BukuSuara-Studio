@@ -943,7 +943,7 @@ def build_interface(args:dict)->gr.Blocks:
                         gr.Markdown('''
 ### Agen Gemini — mode hemat API gratis
 Agen dapat membaca **setting ringkas** BukuSuara dan mengubah setting aman yang sudah diberi tool lokal.
-Isi buku/file **tidak dikirim otomatis** ke Gemini. Hanya perintah yang Anda ketik, riwayat chat ringkas, dan setting aplikasi yang dikirim.
+Chat agent tidak mengirim seluruh isi buku. Untuk **DOCX/TXT Bahasa Indonesia**, saat Generate aplikasi otomatis mengirim hanya kandidat nama/istilah asing beserta konteks pendek ke Gemini untuk membuat ejaan pengucapan sebelum TTS.
 
 > Maksimal **100 API key**. Pisahkan key dengan koma, titik koma, atau baris baru. Saat key kena limit/error sementara, agent otomatis mencoba key berikutnya. Limit Gemini tetap berlaku per project.
                         ''')

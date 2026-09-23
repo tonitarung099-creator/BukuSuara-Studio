@@ -72,14 +72,20 @@ def main() -> None:
         "ebook_list": ProxyLike(files),
     }
 
-    a = disambiguate(session, "Buku", files[0])
-    b = disambiguate(session, "Buku", files[1])
-    c = disambiguate(session, "Buku", files[2])
-    d = disambiguate(session, "Lain", files[3])
+    a = disambiguate(session, "Buku", files[0], files)
+    b = disambiguate(session, "Buku", files[1], files)
+    c = disambiguate(session, "Buku", files[2], files)
+    d = disambiguate(session, "Lain", files[3], files)
+
+    # Even if the live session queue shrinks, the original batch must keep
+    # collision naming stable for later books.
+    session["ebook_list"] = ProxyLike([files[2], files[3]])
+    c_after_shrink = disambiguate(session, "Buku", files[2], files)
 
     assert a.startswith("Buku_docx_"), a
     assert c.startswith("Buku_docx_"), c
     assert a != c, (a, c)
+    assert c_after_shrink == c, (c_after_shrink, c)
     assert b == "Buku_txt", b
     assert d == "Lain", d
     print("Directory collision logic: OK")

@@ -6,8 +6,8 @@ def build_interface(args:dict)->gr.Blocks:
         script_mode = args['script_mode']
         is_gui_process = args['is_gui_process']
         is_gui_shared = args['share']
-        title = 'Ebook2Audiobook'
-        gr_glassmask_msg = 'Initialization, please wait…'
+        title = 'BukuSuara Studio'
+        gr_glassmask_msg = 'Menyiapkan BukuSuara Studio, mohon tunggu…'
         models = None
         language_options = [
             (
@@ -702,55 +702,55 @@ def build_interface(args:dict)->gr.Blocks:
                                     gr_voice_highlight_css = gr.HTML(value='', elem_classes=['gr-voice-highlight-css'])
                                     gr_ebook_textarea = gr.Textbox(show_label=True, label='Text Prompt', elem_id='gr_ebook_textarea', visible=False, lines=8, max_length=max_ebook_textarea_length)
                                     with gr.Row(elem_id='gr_row_ebook_mode') as gr_row_ebook_mode:
-                                        gr_ebook_mode = gr.Dropdown(label='', elem_id='gr_ebook_mode', choices=[('File',ebook_modes['SINGLE']), ('Directory',ebook_modes['DIRECTORY']), ('Text',ebook_modes['TEXT'])], interactive=True, scale=2)
-                                        gr_blocks_preview = gr.Checkbox(label='Chapters Preview', elem_id='gr_blocks_preview', value=False, interactive=True, scale=1)
+                                        gr_ebook_mode = gr.Dropdown(label='', elem_id='gr_ebook_mode', choices=[('Buku',ebook_modes['SINGLE']), ('Folder',ebook_modes['DIRECTORY']), ('Teks',ebook_modes['TEXT'])], interactive=True, scale=2)
+                                        gr_blocks_preview = gr.Checkbox(label='Pratinjau Bab', elem_id='gr_blocks_preview', value=False, interactive=True, scale=1)
                                 with gr.Group(elem_id='gr_group_language', elem_classes=['gr-group']):
-                                    gr_language_markdown = gr.Markdown(elem_id='gr_language_markdown', elem_classes=['gr-markdown'], value='Language')
+                                    gr_language_markdown = gr.Markdown(elem_id='gr_language_markdown', elem_classes=['gr-markdown'], value='Bahasa')
                                     with gr.Row(elem_id='gr_row_language') as gr_row_language:
                                         gr_language = gr.Dropdown(show_label=False, elem_id='gr_language', choices=language_options, value=default_language_code, type='value', interactive=True, scale=2)
-                                        gr_translate_enabled = gr.Checkbox(label='Translate', elem_id='gr_translate_enabled', value=False, interactive=True, scale=1, min_width=120)
+                                        gr_translate_enabled = gr.Checkbox(label='Terjemahkan', elem_id='gr_translate_enabled', value=False, interactive=True, scale=1, min_width=120)
                                         gr_translate = gr.Dropdown(show_label=False, elem_id='gr_translate', choices=[], value=None, type='value', interactive=True, visible=False, scale=2)
                                 gr_group_voice_file = gr.Group(elem_id='gr_group_voice_file', elem_classes=['gr-group'], visible=visible_gr_group_voice_file)
                                 with gr_group_voice_file:
-                                    gr_voice_markdown = gr.Markdown(elem_id='gr_voice_markdown', elem_classes=['gr-markdown'], value='Voices')
-                                    gr_voice_file = gr.File(show_label=False, label='Upload Voice', elem_id='gr_voice_file', file_types=voice_formats, value=None, height=100)
+                                    gr_voice_markdown = gr.Markdown(elem_id='gr_voice_markdown', elem_classes=['gr-markdown'], value='Suara')
+                                    gr_voice_file = gr.File(show_label=False, label='Unggah Suara', elem_id='gr_voice_file', file_types=voice_formats, value=None, height=100)
                                     with gr.Row(elem_id='gr_row_voice_player') as gr_row_voice_player:
                                         gr_voice_player_hidden = gr.Audio(elem_id='gr_voice_player_hidden', type='filepath', interactive=False, waveform_options=gr.WaveformOptions(show_recording_waveform=False), show_download_button=False, container=False, visible='hidden', show_share_button=True, show_label=False, scale=0, min_width=60)
                                         gr_voice_play = gr.Button('▶', elem_id='gr_voice_play', elem_classes=['small-btn'], variant='secondary', interactive=True, visible=False, scale=0, min_width=60)
-                                        gr_voice_list = gr.Dropdown(label='Voices', elem_id='gr_voice_list', choices=voice_options, type='value', interactive=True, scale=2)
+                                        gr_voice_list = gr.Dropdown(label='Suara', elem_id='gr_voice_list', choices=voice_options, type='value', interactive=True, scale=2)
                                         gr_voice_selected_filename = gr.Markdown(value='', elem_id='gr_voice_selected_filename', elem_classes=['gr-markdown'], visible=False)
                                         gr_voice_del_btn = gr.Button('🗑', elem_id='gr_voice_del_btn', elem_classes=['small-btn-red'], variant='secondary', interactive=True, visible=False, scale=0, min_width=60)
                                 with gr.Group(elem_id='gr_group_device', elem_classes=['gr-group']):
-                                    gr_device_markdown = gr.Markdown(elem_id='gr_device_markdown', elem_classes=['gr-markdown'], value='Processor')
+                                    gr_device_markdown = gr.Markdown(elem_id='gr_device_markdown', elem_classes=['gr-markdown'], value='Prosesor')
                                     gr_device = gr.Dropdown(label='', elem_id='gr_device', choices=[(k, v['proc']) for k, v in devices.items()], type='value', value=default_device, interactive=True)
                             with gr.Column(elem_id='gr_col_2', elem_classes=['gr-col'], scale=3):
                                 with gr.Group(elem_id='gr_group_tts_engine', elem_classes=['gr-group']):
-                                    gr_tts_rating = gr.Markdown(elem_id='gr_tts_rating', elem_classes=['gr-markdown'], value='TTS Engine')
+                                    gr_tts_rating = gr.Markdown(elem_id='gr_tts_rating', elem_classes=['gr-markdown'], value='Mesin Suara')
                                     gr_tts_engine_list = gr.Dropdown(label='', elem_id='gr_tts_engine_list', choices=tts_engine_options, type='value', interactive=True)
                                 with gr.Group(elem_id='gr_group_models', elem_classes=['gr-group']):
-                                    gr_models_markdown = gr.Markdown(elem_id='gr_models_markdown', elem_classes=['gr-markdown'], value='Models')
-                                    gr_fine_tuned_list = gr.Dropdown(label='Fine Tuned Preset Models', elem_id='gr_fine_tuned_list', choices=fine_tuned_options, type='value', interactive=True)
+                                    gr_models_markdown = gr.Markdown(elem_id='gr_models_markdown', elem_classes=['gr-markdown'], value='Model')
+                                    gr_fine_tuned_list = gr.Dropdown(label='Preset Model', elem_id='gr_fine_tuned_list', choices=fine_tuned_options, type='value', interactive=True)
                                     gr_group_custom_model = gr.Group(visible=False)
                                     with gr_group_custom_model:
-                                        gr_custom_model_file = gr.File(show_label=True, label=f"Upload a ZIP File", elem_id='gr_custom_model_file', value=None, file_types=['.zip'], height=100)
+                                        gr_custom_model_file = gr.File(show_label=True, label=f"Unggah File ZIP", elem_id='gr_custom_model_file', value=None, file_types=['.zip'], height=100)
                                         gr_row_custom_model_list = gr.Row(elem_id='gr_row_custom_model_list')
                                         with gr_row_custom_model_list:
                                             gr_custom_model_list = gr.Dropdown(label='', elem_id='gr_custom_model_list', choices=custom_model_options, type='value', interactive=True, scale=2)
                                             gr_custom_model_train_link = gr.Markdown(value='<a href="https://huggingface.co/spaces/drewThomasson/xtts-finetune-webui-gpu" target="_blank" rel="noopener noreferrer">New Fine Tuned Model</a>', elem_id='gr_custom_model_train_link', elem_classes=['gr-markdown'], visible=True)
                                             gr_custom_model_del_btn = gr.Button('🗑', elem_id='gr_custom_model_del_btn', elem_classes=['small-btn-red'], variant='secondary', interactive=True, visible=False, scale=0, min_width=60)
                                 with gr.Group(elem_id='gr_group_output_format'):
-                                    gr_output_markdown = gr.Markdown(elem_id='gr_output_markdown', elem_classes=['gr-markdown'], value='Output')
+                                    gr_output_markdown = gr.Markdown(elem_id='gr_output_markdown', elem_classes=['gr-markdown'], value='Hasil')
                                     with gr.Row(elem_id='gr_row_output_format'):
                                         gr_output_format_list = gr.Dropdown(label='Format', elem_id='gr_output_format_list', choices=output_formats, type='value', value=default_output_format, interactive=True, scale=1)
-                                        gr_output_channel_list = gr.Dropdown(label='Channel', elem_id='gr_output_channel_list', choices=['mono', 'stereo'], type='value', value=default_output_channel, interactive=True, scale=1)
+                                        gr_output_channel_list = gr.Dropdown(label='Kanal', elem_id='gr_output_channel_list', choices=['mono', 'stereo'], type='value', value=default_output_channel, interactive=True, scale=1)
                                         with gr.Group(elem_id='gr_group_output_split'):
-                                            gr_output_split = gr.Checkbox(label='Split File', elem_id='gr_output_split', value=default_output_split, interactive=True)
+                                            gr_output_split = gr.Checkbox(label='Bagi File', elem_id='gr_output_split', value=default_output_split, interactive=True)
                                             gr_row_output_split_hours = gr.Row(elem_id='gr_row_output_split_hours', visible=False)
                                             with gr_row_output_split_hours:
-                                                gr_output_split_hours_markdown = gr.Markdown(elem_id='gr_output_split_hours_markdown',elem_classes=['gr-markdown-output-split-hours'], value='Hours<br/>/ Part')
+                                                gr_output_split_hours_markdown = gr.Markdown(elem_id='gr_output_split_hours_markdown',elem_classes=['gr-markdown-output-split-hours'], value='Jam<br/>/ Bagian')
                                                 gr_output_split_hours = gr.Dropdown(label='', elem_id='gr_output_split_hours', choices=options_output_split_hours, type='value', value=default_output_split_hours, interactive=True, scale=1)
                                 with gr.Group(elem_id='gr_group_session', elem_classes=['gr-group']):
-                                    gr_session_markdown = gr.Markdown(elem_id='gr_session_markdown', elem_classes=['gr-markdown'], value='Session')
+                                    gr_session_markdown = gr.Markdown(elem_id='gr_session_markdown', elem_classes=['gr-markdown'], value='Sesi')
                                     gr_session_switch_disable_state = gr.State(None)
                                     gr_session_switch_enable_state = gr.State(None)
                                     with gr.Row(elem_id='gr_row_session'):
@@ -778,7 +778,7 @@ def build_interface(args:dict)->gr.Blocks:
                         with gr.Group(elem_id='gr_group_convert_btn', elem_classes=['gr-group-convert-btn']) as gr_group_convert_btn:
                             gr_convert_btn = gr.Button(elem_id='gr_convert_btn', value='📚', elem_classes='gr-convert-btn', variant='primary', interactive=False)
 
-                    with gr.Tab('XTTS Settings', elem_id='gr_tab_xtts_params', elem_classes='gr-tab', visible=False) as gr_tab_xtts_params:
+                    with gr.Tab('Pengaturan XTTS', elem_id='gr_tab_xtts_params', elem_classes='gr-tab', visible=False) as gr_tab_xtts_params:
                         with gr.Group(elem_id='gr_group_xtts_params', elem_classes=['gr-group']):
                             gr_xtts_temperature = gr.Slider(
                                 label='Temperature',
@@ -852,7 +852,7 @@ def build_interface(args:dict)->gr.Blocks:
                                 info='Coqui-tts builtin text splitting. Can help against hallucinations bu can also be worse.',
                                 visible=False
                             )      
-                    with gr.Tab('Bark Settings', elem_id='gr_tab_bark_params', elem_classes='gr-tab', visible=False) as gr_tab_bark_params:
+                    with gr.Tab('Pengaturan Bark', elem_id='gr_tab_bark_params', elem_classes='gr-tab', visible=False) as gr_tab_bark_params:
                         gr.Markdown(
                             elem_id='gr_markdown_tab_bark_params',
                             value='''
@@ -1128,7 +1128,7 @@ def build_interface(args:dict)->gr.Blocks:
                 rating = default_engine_settings[tts_engine]['rating']
                 return f'''
                     <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-                        <span class="gr-markdown-span">TTS Engine</span>
+                        <span class="gr-markdown-span">Mesin Suara</span>
                         <table style="
                             display:inline-block;
                             border-collapse:collapse;
@@ -1553,7 +1553,7 @@ def build_interface(args:dict)->gr.Blocks:
                     style = _build_voice_highlight_css(row)
                     filename = Path(ebook_path).name
                     return (
-                        gr.update(value=assigned_voice, label='Voices'),
+                        gr.update(value=assigned_voice, label='Suara'),
                         gr.update(value=style),
                         gr.update(visible=True),
                         gr.update(value=filename, visible=True),

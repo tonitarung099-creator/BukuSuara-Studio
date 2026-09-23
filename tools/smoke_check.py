@@ -45,6 +45,10 @@ def main() -> int:
         errors.append("Progress ekstraksi custom model masih berisiko melewati 100%")
     if "Missing required audio tool(s)" not in core_source:
         errors.append("Export audio belum memvalidasi ffmpeg/ffprobe sebelum subprocess")
+    if "input_channels == target_channels" not in core_source:
+        errors.append("Stream-copy audio masih dapat mengabaikan pilihan mono/stereo")
+    if "Unsupported output format:" not in core_source or "Unsupported output channel:" not in core_source:
+        errors.append("Core belum memvalidasi format/channel output")
     if "never the active session" not in core_source or "if dir_name in current_user_dirs:" not in core_source:
         errors.append("Cleanup session lama masih berisiko menghapus sesi aktif")
     if "def commit_checksum(" not in core_source or "without committing a changed value prematurely" not in core_source:
@@ -105,6 +109,8 @@ def main() -> int:
         errors.append("Headless custom model belum divalidasi sebelum konversi")
     if "--output_dir must be an existing directory" not in app_source:
         errors.append("Headless output_dir belum divalidasi sebagai directory")
+    if "choices=output_formats" not in app_source or "choices=['mono', 'stereo']" not in app_source:
+        errors.append("Argumen headless format/channel belum dibatasi")
     if "voice_map_dir = os.path.dirname(voice_map_path)" not in app_source:
         errors.append("Relative voice_map voice path belum dipatok ke lokasi JSON")
     if "elif not error and args.get('ebook'" not in app_source:

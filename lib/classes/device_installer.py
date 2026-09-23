@@ -1984,7 +1984,11 @@ class DeviceInstaller():
             with zipfile.ZipFile(zip_path, 'r') as zf:
                 members:list = zf.infolist()
                 desc:str = 'Extracting voices'
+                root_resolved = DEVICE_INSTALLER_ROOT.resolve()
                 for member in tqdm(members, desc=desc, unit='file'):
+                    target = (DEVICE_INSTALLER_ROOT / member.filename).resolve()
+                    if root_resolved != target and root_resolved not in target.parents:
+                        raise ValueError(f'Unsafe voice ZIP path: {member.filename}')
                     zf.extract(member, str(DEVICE_INSTALLER_ROOT))
             zip_path.unlink()
             return 0 if has_wav() else 1

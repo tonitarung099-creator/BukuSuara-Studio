@@ -46,6 +46,7 @@ from lib.classes.voice_extractor import VoiceExtractor
 from lib.classes.non_text_filter import NonTextFilter
 #from lib.classes.redirect_console import RedirectConsole
 from lib.classes.argos_translator import ArgosTranslator
+from lib.classes.gemini_pronunciation import GeminiPronunciationProcessor, PronunciationError
 from lib.classes.tts_manager import TTSManager
 from lib.classes.tts_engines.common.audio import get_audiolist_duration, get_audio_duration
 from lib.classes.tts_engines.common.utils import build_vtt_file
@@ -3628,6 +3629,50 @@ def translate_blocks(session_id:str, raw_blocks:list)->tuple:
         error = f'translate_blocks() error: {e}'
         return raw_blocks, error
 
+def preprocess_gemini_pronunciation(session_id:str, raw_blocks:list)->tuple[list, str|None]:
+    """Automatically rewrite foreign-name pronunciation for Indonesian DOCX/TXT before TTS."""
+    try:
+        session = context.get_session(session_id)
+        if not session or not session.get('id', False):
+            return raw_blocks, 'Session expired'
+        final_language = session.get('translate') if session.get('translate_enabled') and session.get('translate') else session.get('language')
+        source_ext = Path(session.get('ebook') or '').suffix.lower()
+        is_text_source = session.get('ebook_mode') == ebook_modes['TEXT']
+        if final_language != 'ind' or (source_ext not in {'.docx', '.txt'} and not is_text_source):
+            return raw_blocks, None
+
+        processor = GeminiPronunciationProcessor(session_id, session['process_dir'])
+        if not processor.api_keys:
+            return raw_blocks, (
+                'DOCX/TXT Bahasa Indonesia wajib melewati Gemini pronunciation pass. '
+                'Isi API key Gemini pada tab Agen Gemini terlebih dahulu.'
+            )
+
+        msg = f'Gemini pronunciation: memindai {len(raw_blocks)} blok DOCX/TXT sebelum TTS…'
+        print(msg)
+        show_alert(session_id, {'type': 'info', 'msg': msg})
+
+        def _on_progress(done:int, total:int, mapped:int)->None:
+            desc = f'Gemini pronunciation {done}/{total} batch • {mapped} istilah tersimpan'
+            print(desc)
+            if progress_bar is not None:
+                progress_bar(done / max(total, 1), desc=desc)
+
+        processed, pronunciation_map = processor.process_blocks(list(raw_blocks), progress_callback=_on_progress)
+        changed_blocks = sum(1 for before, after in zip(raw_blocks, processed) if before != after)
+        msg = (
+            f'Gemini pronunciation selesai: {len(pronunciation_map)} alias pengucapan, '
+            f'{changed_blocks} blok disiapkan untuk TTS.'
+        )
+        print(msg)
+        show_alert(session_id, {'type': 'success', 'msg': msg})
+        return processed, None
+    except PronunciationError as e:
+        return raw_blocks, str(e)
+    except Exception as e:
+        return raw_blocks, f'Gemini pronunciation error: {e}'
+
+
 def convert_ebook(args:dict)->tuple:
     try:
         global context
@@ -4014,6 +4059,10 @@ def convert_ebook(args:dict)->tuple:
                                             raw_blocks = get_blocks(session_id, epubBook)
                                             if raw_blocks and session.get('translate_enabled'):
                                                 raw_blocks, error = translate_blocks(session_id, list(raw_blocks))
+                                                if error is not None:
+                                                    return error, False
+                                            if raw_blocks:
+                                                raw_blocks, error = preprocess_gemini_pronunciation(session_id, list(raw_blocks))
                                                 if error is not None:
                                                     return error, False
                                             if raw_blocks:

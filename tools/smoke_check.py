@@ -51,6 +51,10 @@ def main() -> int:
         errors.append("Checksum sumber masih berisiko dikomit sebelum parse berhasil")
     if "def ffmeta_escape(" not in core_source:
         errors.append("Metadata FFmpeg belum meng-escape karakter khusus")
+    if "published_value = session['metadata'].get('published') or session['metadata'].get('date')" not in core_source:
+        errors.append("Exporter metadata belum membaca key date dari schema session")
+    if "raw_identifier = session['metadata'].get('identifier')" not in core_source:
+        errors.append("Exporter metadata belum membaca identifier EPUB dari schema session")
     if "return _fail(msg)" not in core_source or "return _fail(error)" not in core_source:
         errors.append("Finalize masih bisa meninggalkan status CONVERTING setelah pembatalan/error awal")
     if "clean_title = ffmeta_escape(" not in core_source:

@@ -12,10 +12,14 @@ from lib.classes.gemini_agent import (
     mark_api_key_failure,
     parse_api_keys,
 )
-from lib.classes.gemini_pronunciation import GeminiPronunciationProcessor
+from lib.classes.gemini_pronunciation import (
+    GeminiPronunciationProcessor,
+    PRONUNCIATION_MAX_OUTPUT_TOKENS,
+)
 
 
 def main() -> None:
+    assert PRONUNCIATION_MAX_OUTPUT_TOKENS >= 4096
     keys = [f"key-{i:03d}" for i in range(105)]
     parsed = parse_api_keys(",".join(keys))
     assert len(parsed) == MAX_API_KEYS == 100

@@ -105,6 +105,8 @@ def main() -> int:
         errors.append("Restore session masih berisiko menghapus source asli saat cache ebook hilang")
     if "data = data if isinstance(data, Mapping) else {}" not in gradio_source:
         errors.append("Restore session belum aman saat data awal None/tidak valid")
+    if "'error': str(e)" not in gradio_source:
+        errors.append("Autosave session masih mencoba menyerialisasi object Exception mentah")
     if "if not os.path.exists(session['custom_model']):" not in gradio_source:
         errors.append("Restore session belum memvalidasi path custom model secara langsung")
 

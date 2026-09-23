@@ -156,6 +156,10 @@ def main() -> int:
         "lib/classes/tts_engines/piper.py",
     ):
         engine_text = Path(engine_source).read_text(encoding="utf-8")
+        if "ZeroShot voice-conversion is expensive" not in engine_text or "self.engine_zs = None" not in engine_text:
+            errors.append(f"{engine_source}: ZeroShot model masih dimuat eager")
+        if "self.engine_zs = self._load_engine_zs(self.device)" not in engine_text:
+            errors.append(f"{engine_source}: lazy ZeroShot loader tidak terhubung saat cloning dibutuhkan")
         if "if semitones > 0:" in engine_text:
             errors.append(f"{engine_source}: pitch negatif masih diabaikan")
         if "SoX is required for voice pitch adaptation" not in engine_text:

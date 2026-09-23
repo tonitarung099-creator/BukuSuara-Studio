@@ -164,10 +164,15 @@ class SubprocessPipe:
             return False
 
     def stop(self)->bool:
-        self._stop_requested=True
+        self._stop_requested = True
         if self.process and self.process.poll() is None:
             try:
                 self.process.terminate()
+                try:
+                    self.process.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    self.process.kill()
+                    self.process.wait(timeout=2)
             except Exception:
                 pass
         return False

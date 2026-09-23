@@ -33,6 +33,8 @@ _RETRY_MARKERS = (
 )
 _KEY_COOLDOWN: dict[str, float] = {}
 _KEY_DISABLED_UNTIL: dict[str, float] = {}
+_SESSION_API_KEYS: dict[str, list[str]] = {}
+_SESSION_MODELS: dict[str, str] = {}
 
 
 def _fingerprint(key: str) -> str:
@@ -60,6 +62,79 @@ def parse_api_keys(value: str | Iterable[str] | None) -> list[str]:
         if len(result) >= MAX_API_KEYS:
             break
     return result
+
+
+def set_session_api_keys(session_id: str | None, value: str | Iterable[str] | None) -> int:
+    """Keep Gemini keys in process memory only; never serialize them into audiobook sessions."""
+    if not session_id:
+        return 0
+    keys = parse_api_keys(value)
+    if keys:
+        _SESSION_API_KEYS[str(session_id)] = keys
+    else:
+        _SESSION_API_KEYS.pop(str(session_id), None)
+    return len(keys)
+
+
+def get_session_api_keys(session_id: str | None) -> list[str]:
+    if session_id:
+        stored = _SESSION_API_KEYS.get(str(session_id))
+        if stored:
+            return list(stored)
+    return parse_api_keys(None)
+
+
+def set_session_model(session_id: str | None, model: str | None) -> str:
+    selected = (model or DEFAULT_GEMINI_MODEL).strip() or DEFAULT_GEMINI_MODEL
+    if session_id:
+        _SESSION_MODELS[str(session_id)] = selected
+    return selected
+
+
+def get_session_model(session_id: str | None) -> str:
+    if session_id:
+        return _SESSION_MODELS.get(str(session_id), DEFAULT_GEMINI_MODEL)
+    return DEFAULT_GEMINI_MODEL
+
+
+def clear_session_gemini(session_id: str | None) -> None:
+    if session_id:
+        _SESSION_API_KEYS.pop(str(session_id), None)
+        _SESSION_MODELS.pop(str(session_id), None)
+
+
+def classify_api_error(exc: Exception) -> str:
+    text = str(exc).lower()
+    if any(marker in text for marker in _RETRY_MARKERS):
+        return "quota"
+    if any(marker in text for marker in (
+        "api_key_invalid", "api key not valid", "invalid api key",
+        "401", "unauthenticated", "403", "permission_denied",
+    )):
+        return "invalid_key"
+    return "fatal"
+
+
+def available_api_keys(api_keys: str | Iterable[str] | None) -> list[tuple[int, str]]:
+    keys = parse_api_keys(api_keys)
+    now = time.time()
+    ready: list[tuple[int, str]] = []
+    cooling: list[tuple[int, str]] = []
+    for index, key in enumerate(keys[:MAX_API_KEYS]):
+        fingerprint = _fingerprint(key)
+        if _KEY_DISABLED_UNTIL.get(fingerprint, 0.0) > now:
+            continue
+        cooldown_until = _KEY_COOLDOWN.get(fingerprint, 0.0)
+        (ready if cooldown_until <= now else cooling).append((index, key))
+    return ready or cooling
+
+
+def mark_api_key_failure(key: str, error_kind: str) -> None:
+    fingerprint = _fingerprint(key)
+    if error_kind == "quota":
+        _KEY_COOLDOWN[fingerprint] = time.time() + 300
+    elif error_kind == "invalid_key":
+        _KEY_DISABLED_UNTIL[fingerprint] = time.time() + 86400
 
 
 @dataclass
@@ -119,31 +194,11 @@ class GeminiAgent:
         return {key: session.get(key) for key in keys}
 
     def _available_keys(self) -> list[tuple[int, str]]:
-        now = time.time()
-        ready: list[tuple[int, str]] = []
-        cooling: list[tuple[int, str]] = []
-        for index, key in enumerate(self.api_keys[:MAX_API_KEYS]):
-            fingerprint = _fingerprint(key)
-            disabled_until = _KEY_DISABLED_UNTIL.get(fingerprint, 0.0)
-            if disabled_until > now:
-                continue
-            cooldown_until = _KEY_COOLDOWN.get(fingerprint, 0.0)
-            (ready if cooldown_until <= now else cooling).append((index, key))
-        # Jika semua key sedang cooldown, tetap coba berurutan agar pengguna tidak
-        # terjebak pada key pertama. Error berikutnya akan memindahkan ke key lain.
-        return ready or cooling
+        return available_api_keys(self.api_keys)
 
     @staticmethod
     def _error_kind(exc: Exception) -> str:
-        text = str(exc).lower()
-        if any(marker in text for marker in _RETRY_MARKERS):
-            return "quota"
-        if any(marker in text for marker in (
-            "api_key_invalid", "api key not valid", "invalid api key",
-            "401", "unauthenticated", "403", "permission_denied",
-        )):
-            return "invalid_key"
-        return "fatal"
+        return classify_api_error(exc)
 
     def run(
         self,
@@ -272,15 +327,8 @@ class GeminiAgent:
             except Exception as exc:
                 last_error = exc
                 error_kind = self._error_kind(exc)
-                fingerprint = _fingerprint(key)
-                if error_kind == "quota":
-                    # Beri cooldown agar request berikutnya tidak terus menghantam
-                    # key yang baru saja limit, lalu otomatis lanjut ke key berikutnya.
-                    _KEY_COOLDOWN[fingerprint] = time.time() + 300
-                    continue
-                if error_kind == "invalid_key":
-                    # Key salah/tidak berizin dilewati selama 24 jam untuk proses ini.
-                    _KEY_DISABLED_UNTIL[fingerprint] = time.time() + 86400
+                if error_kind in {"quota", "invalid_key"}:
+                    mark_api_key_failure(key, error_kind)
                     continue
                 break
 

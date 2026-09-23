@@ -3860,11 +3860,16 @@ def preprocess_gemini_pronunciation(session_id:str, raw_blocks:list)->tuple[list
         return raw_blocks, f'Gemini pronunciation error: {e}'
 
 
-def disambiguate_directory_ebook_name(session:Any, ebook_name:str, ebook_src:str)->str:
+def disambiguate_directory_ebook_name(
+    session:Any,
+    ebook_name:str,
+    ebook_src:str,
+    batch_ebook_list:Any=None,
+)->str:
     """Avoid cache/output collisions for different Directory Mode files with the same stem."""
     if session.get('ebook_mode') != ebook_modes['DIRECTORY']:
         return ebook_name
-    ebook_list_raw = session.get('ebook_list')
+    ebook_list_raw = batch_ebook_list if batch_ebook_list is not None else session.get('ebook_list')
     if ebook_list_raw is None or isinstance(ebook_list_raw, (str, bytes)):
         return ebook_name
     try:
@@ -3985,7 +3990,12 @@ def convert_ebook(args:dict)->tuple:
                 ebook_name = get_sanitized(Path(session['ebook_src']).stem)
             ebook_name = strip_invalid_filename_characters(ebook_name)
             if session['ebook_mode'] == ebook_modes['DIRECTORY'] and session.get('ebook_src'):
-                ebook_name = disambiguate_directory_ebook_name(session, ebook_name, session['ebook_src'])
+                ebook_name = disambiguate_directory_ebook_name(
+                    session,
+                    ebook_name,
+                    session['ebook_src'],
+                    batch_ebook_list=args.get('ebook_list'),
+                )
             if session['ebook_mode'] != ebook_modes['TEXT']:
                 if session.get('ebook_loaded') != session['ebook_src']:
                     session['blocks_orig'] = {}

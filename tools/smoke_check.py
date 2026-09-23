@@ -160,6 +160,8 @@ def main() -> int:
             errors.append(f"{engine_source}: ZeroShot model masih dimuat eager")
         if "self.engine_zs = self._load_engine_zs(self.device)" not in engine_text:
             errors.append(f"{engine_source}: lazy ZeroShot loader tidak terhubung saat cloning dibutuhkan")
+        if "def _refresh_voice_mode()->bool:" not in engine_text or "use_zs = _refresh_voice_mode()" not in engine_text:
+            errors.append(f"{engine_source}: mode cloning belum dihitung ulang setelah inline voice berubah")
         if "if semitones > 0:" in engine_text:
             errors.append(f"{engine_source}: pitch negatif masih diabaikan")
         if "SoX is required for voice pitch adaptation" not in engine_text:

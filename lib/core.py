@@ -3553,6 +3553,7 @@ def delete_folder(folder_path:str)->None:
             shutil.rmtree(path)
 
 def delete_unused_tmp_dirs(session_id:str, output_dir:str, days:int)->None:
+    """Delete only expired session-owned directories, never the active session or arbitrary user folders."""
     session = context.get_session(session_id)
     if session and session.get('id', False):
         dir_array = [
@@ -3568,24 +3569,31 @@ def delete_unused_tmp_dirs(session_id:str, output_dir:str, days:int)->None:
             f'voice-{session_id}',
             f'model-{session_id}'
         }
+        session_prefixes = ('proc-', 'web-', 'cli-', 'voice-', 'model-')
         current_time = time.time()
-        threshold_time = current_time - (days * 24 * 60 * 60)  # Convert days to seconds
+        threshold_time = current_time - (days * 24 * 60 * 60)
         for dir_path in dir_array:
-            if os.path.exists(dir_path) and os.path.isdir(dir_path):
-                for dir in os.listdir(dir_path):
-                    if dir in current_user_dirs:        
-                        full_dir_path = os.path.join(dir_path, dir)
-                        if os.path.isdir(full_dir_path):
-                            try:
-                                dir_mtime = os.path.getmtime(full_dir_path)
-                                dir_ctime = os.path.getctime(full_dir_path)
-                                if dir_mtime < threshold_time and dir_ctime < threshold_time:
-                                    shutil.rmtree(full_dir_path, ignore_errors=True)
-                                    msg = f'Deleted expired session: {full_dir_path}'
-                                    print(msg)
-                            except Exception as e:
-                                error = f'Error deleting {full_dir_path}: {e}'
-                                print(error)
+            if not (os.path.exists(dir_path) and os.path.isdir(dir_path)):
+                continue
+            for dir_name in os.listdir(dir_path):
+                if dir_name in current_user_dirs:
+                    continue
+                if not dir_name.startswith(session_prefixes):
+                    # Never delete arbitrary folders that happen to live beside BukuSuara sessions.
+                    continue
+                full_dir_path = os.path.join(dir_path, dir_name)
+                if not os.path.isdir(full_dir_path):
+                    continue
+                try:
+                    dir_mtime = os.path.getmtime(full_dir_path)
+                    dir_ctime = os.path.getctime(full_dir_path)
+                    if dir_mtime < threshold_time and dir_ctime < threshold_time:
+                        shutil.rmtree(full_dir_path, ignore_errors=True)
+                        msg = f'Deleted expired session: {full_dir_path}'
+                        print(msg)
+                except Exception as e:
+                    error = f'Error deleting {full_dir_path}: {e}'
+                    print(error)
 
 def get_compatible_tts_engines(language:str)->list[str]:
     return [

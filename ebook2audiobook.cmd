@@ -1074,7 +1074,7 @@ if defined arguments.help (
 		call :portable_env_ready
 		if not errorlevel 1 (
 			call :run_portable_env
-			exit /b %ERRORLEVEL%
+			goto :eof
 		)
 		call :check_scoop
 		if errorlevel 1 goto :install_scoop

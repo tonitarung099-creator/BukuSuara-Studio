@@ -367,9 +367,13 @@ Default to config.json model.""")
                 if args.get('voice'):
                     if os.path.exists(args['voice']):
                         args['voice'] = os.path.abspath(args['voice'])
-                if args.get('custom_model', None) is not None:
+                    else:
+                        error = f"Error: The provided --voice {args['voice']} does not exist."
+                if not error and args.get('custom_model', None) is not None:
                     if os.path.exists(args['custom_model']):
                         args['custom_model'] = os.path.abspath(args['custom_model'])
+                    else:
+                        error = f"Error: The provided --custom_model {args['custom_model']} does not exist."
                 if args.get('output_dir', None) is not None and not os.path.exists(args['output_dir']):
                     error = 'Error: --output_dir path does not exist.'              
                 elif args.get('ebooks_dir', None) is not None:
@@ -409,7 +413,7 @@ Default to config.json model.""")
                                 ebook_dir_path = os.path.abspath(os.path.join(args['ebooks_dir'], name))
                                 if not os.path.isfile(ebook_dir_path):
                                     continue
-                                if not any(name.endswith(ext) for ext in ebook_formats):
+                                if not any(name.lower().endswith(str(ext).lower()) for ext in ebook_formats):
                                     print(f'{name} skipped (unsupported format)')
                                     continue
                                 args['ebook_list'].append(ebook_dir_path)

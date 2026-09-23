@@ -113,6 +113,8 @@ def main() -> int:
         errors.append("Restore session belum aman saat data awal None/tidak valid")
     if "'error': str(e)" not in gradio_source:
         errors.append("Autosave session masih mencoba menyerialisasi object Exception mentah")
+    if "classes = list(attr) if attr is not None" not in gradio_source:
+        errors.append("Glassmask UI masih memakai mutable default list")
     if "if not os.path.exists(session['custom_model']):" not in gradio_source:
         errors.append("Restore session belum memvalidasi path custom model secara langsung")
 

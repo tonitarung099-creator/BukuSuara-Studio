@@ -31,6 +31,8 @@ jobs:
 
       - name: Audit Gradio callback arity
         run: python tools/callback_audit.py
+      - name: Test directory collision logic
+        run: python tools/test_directory_collision.py
 
 
   windows-bootstrap-smoke:

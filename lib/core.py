@@ -441,7 +441,10 @@ def extract_custom_model(session_id)->str|None:
                 status, msg = extractor.extract_voice()
                 if status:
                     session['voice'] = final_voice_file
-                    if os.path.exists(file_src):
+                    # Gradio uploads are temporary copies and may be cleaned up.
+                    # Headless/CLI custom_model points to the user's original file
+                    # and must never be deleted by BukuSuara.
+                    if session.get('is_gui_process') and os.path.exists(file_src):
                         os.remove(file_src)
                     if os.path.exists(voice_ref):
                         os.remove(voice_ref)

@@ -249,6 +249,10 @@ def main() -> int:
         errors.append("Fast-path portable belum dijalankan sebelum bootstrap Scoop")
     if "call :run_portable_env\n\t\t\texit /b %ERRORLEVEL%" in launcher_source:
         errors.append("Fast-path portable masih memakai %ERRORLEVEL% di dalam block")
+    if ":run_conda_env\n" not in launcher_source or 'set "APP_RC=%ERRORLEVEL%"' not in launcher_source:
+        errors.append("Bootstrap Conda masih dapat menutupi exit code app")
+    if 'call python.exe -u "%SAFE_SCRIPT_DIR%\\app.py" --script_mode %SCRIPT_MODE% %ARGS%\n\t\tcall conda deactivate' in launcher_source:
+        errors.append("App masih dijalankan langsung sebelum conda deactivate")
 
     requirements = Path("requirements.txt").read_text(encoding="utf-8")
     if "./ext/py/demucs" in requirements:

@@ -27,7 +27,14 @@ _RETRY_MARKERS = (
     "quota",
     "rate limit",
     "rate_limit",
+    "500",
+    "502",
     "503",
+    "504",
+    "internal_server_error",
+    "deadline_exceeded",
+    "timeout",
+    "connection reset",
     "unavailable",
     "overloaded",
 )
@@ -116,17 +123,33 @@ def classify_api_error(exc: Exception) -> str:
 
 
 def available_api_keys(api_keys: str | Iterable[str] | None) -> list[tuple[int, str]]:
+    """Return only keys that are currently eligible for a real API request."""
     keys = parse_api_keys(api_keys)
     now = time.time()
     ready: list[tuple[int, str]] = []
-    cooling: list[tuple[int, str]] = []
     for index, key in enumerate(keys[:MAX_API_KEYS]):
         fingerprint = _fingerprint(key)
         if _KEY_DISABLED_UNTIL.get(fingerprint, 0.0) > now:
             continue
-        cooldown_until = _KEY_COOLDOWN.get(fingerprint, 0.0)
-        (ready if cooldown_until <= now else cooling).append((index, key))
-    return ready or cooling
+        if _KEY_COOLDOWN.get(fingerprint, 0.0) > now:
+            continue
+        ready.append((index, key))
+    return ready
+
+
+def api_pool_retry_after(api_keys: str | Iterable[str] | None) -> int | None:
+    """Seconds until the earliest quota-cooled key becomes eligible again."""
+    keys = parse_api_keys(api_keys)
+    now = time.time()
+    waits: list[float] = []
+    for key in keys[:MAX_API_KEYS]:
+        fingerprint = _fingerprint(key)
+        if _KEY_DISABLED_UNTIL.get(fingerprint, 0.0) > now:
+            continue
+        until = _KEY_COOLDOWN.get(fingerprint, 0.0)
+        if until > now:
+            waits.append(until - now)
+    return max(1, int(min(waits))) if waits else None
 
 
 def mark_api_key_failure(key: str, error_kind: str) -> None:
@@ -290,7 +313,21 @@ class GeminiAgent:
         )
 
         last_error: Exception | None = None
-        for index, key in self._available_keys():
+        eligible_keys = self._available_keys()
+        if not eligible_keys:
+            retry_after = api_pool_retry_after(self.api_keys)
+            if retry_after is not None:
+                return AgentResult(
+                    reply=f"Semua API key sedang cooldown. Coba lagi sekitar {retry_after} detik.",
+                    status=f"Pool Gemini cooldown • {len(self.api_keys)} key terdaftar",
+                    model=self.model,
+                )
+            return AgentResult(
+                reply="Tidak ada API key Gemini yang valid/aktif untuk dipakai.",
+                status=f"Pool Gemini tidak tersedia • {len(self.api_keys)} key terdaftar",
+                model=self.model,
+            )
+        for index, key in eligible_keys:
             try:
                 client = genai.Client(api_key=key)
                 config = types.GenerateContentConfig(

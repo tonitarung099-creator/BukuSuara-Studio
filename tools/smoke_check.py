@@ -63,8 +63,10 @@ def main() -> int:
         errors.append("Judul chapter FFmpeg belum memakai escaping metadata yang konsisten")
     if "def ffconcat_quote_path(" not in core_source or "def ffconcat_unquote_path(" not in core_source:
         errors.append("Path FFmpeg concat belum aman untuk apostrof")
-    if 'f.write(f"file {ffconcat_quote_path(path)}' not in core_source:
-        errors.append("Generator FFmpeg concat masih menulis path mentah")
+    if core_source.count('f.write(f"file {ffconcat_quote_path(path)}') < 3:
+        errors.append("Semua generator FFmpeg concat belum memakai path quoting aman")
+    if "Metadata generation failed for part" not in core_source or "Metadata generation failed." not in core_source:
+        errors.append("Kegagalan metadata FFmpeg masih bisa diteruskan ke tahap export")
     if "should_stop=lambda: bool(session.get('cancellation_requested'))" not in core_source:
         errors.append("FFmpeg merge/export belum terhubung ke cancellation session")
     if "def preprocess_gemini_pronunciation(" not in core_source:
@@ -101,6 +103,8 @@ def main() -> int:
         errors.append("Headless custom model belum divalidasi sebelum konversi")
     if "--output_dir must be an existing directory" not in app_source:
         errors.append("Headless output_dir belum divalidasi sebagai directory")
+    if "voice_map_dir = os.path.dirname(voice_map_path)" not in app_source:
+        errors.append("Relative voice_map voice path belum dipatok ke lokasi JSON")
     if "elif not error and args.get('ebook'" not in app_source:
         errors.append("Headless source branch masih bisa lanjut setelah validasi gagal")
     if "standalone/static FFmpeg" not in app_source or "if ffmpeg and ffprobe:" not in app_source:

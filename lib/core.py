@@ -480,35 +480,47 @@ def hash_proxy_dict(proxy_dict:Any)->str:
     data_str = json.dumps(data, default=str, sort_keys=True)
     return hashlib.md5(data_str.encode('utf-8')).hexdigest()
 
+def _calculate_ebook_checksum(session:dict)->str:
+    hash_func = hashlib.sha256()
+    with open(session['ebook'], 'rb') as f:
+        while chunk := f.read(8192):
+            hash_func.update(chunk)
+    return hash_func.hexdigest()
+
 def compare_checksums(session_id:str)->tuple[bool, str|None]:
+    """Compare source checksum without committing a changed value prematurely."""
     try:
         session = context.get_session(session_id)
         if session and session.get('id', False):
-            hash_algorithm:str = 'sha256'
             checksum_path = os.path.join(session['process_dir'], 'checksum')
-            hash_func = hashlib.new(hash_algorithm)
-            with open(session['ebook'], 'rb') as f:
-                while chunk := f.read(8192):
-                    hash_func.update(chunk)
-            new_checksum = hash_func.hexdigest()
+            new_checksum = _calculate_ebook_checksum(session)
             if not os.path.exists(checksum_path):
-                with open(checksum_path, 'w', encoding='utf-8') as f:
-                    f.write(new_checksum)
                 return False, None
-            else:
-                with open(checksum_path, 'r', encoding='utf-8') as f:
-                    saved_checksum = f.read().strip()
-                if saved_checksum == new_checksum:
-                    return True, None
-                else:
-                    with open(checksum_path, 'w', encoding='utf-8') as f:
-                        f.write(new_checksum)
-                        return False, None
-        error = f'compare_checksums() error: session does not exist'
+            with open(checksum_path, 'r', encoding='utf-8') as f:
+                saved_checksum = f.read().strip()
+            return saved_checksum == new_checksum, None
+        error = 'compare_checksums() error: session does not exist'
         return False, error
     except Exception as e:
         error = f'compare_checksums() error: {e}'
         return False, error
+
+def commit_checksum(session_id:str)->bool:
+    """Commit checksum only after parsing/pronunciation state is safely ready."""
+    try:
+        session = context.get_session(session_id)
+        if not (session and session.get('id', False)):
+            return False
+        checksum_path = os.path.join(session['process_dir'], 'checksum')
+        checksum = _calculate_ebook_checksum(session)
+        tmp_path = checksum_path + '.tmp'
+        with open(tmp_path, 'w', encoding='utf-8') as f:
+            f.write(checksum)
+        os.replace(tmp_path, checksum_path)
+        return True
+    except Exception as e:
+        print(f'commit_checksum() error: {e}')
+        return False
 
 def compare_dict_keys(d1, d2):
     """Return the first nested difference, or None when both structures match."""
@@ -4180,6 +4192,8 @@ def convert_ebook(args:dict)->tuple:
                                             save_db_blocks(session_id)
                                         if session.get('blocks_orig', {}) and session.get('blocks_current', {}):
                                             sync_globals_to_blocks(session_id)
+                                            if not commit_checksum(session_id):
+                                                return 'Could not safely commit source checksum.', False
                                             if session['blocks_preview']:
                                                 msg = f'Chapters preview requested. Select which block to convert:'
                                                 print(msg)

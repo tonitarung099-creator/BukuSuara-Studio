@@ -33,6 +33,12 @@ def main() -> int:
     gemini_source = Path("lib/classes/gemini_agent.py").read_text(encoding="utf-8")
     pronunciation_source = Path("lib/classes/gemini_pronunciation.py").read_text(encoding="utf-8")
     core_source = Path("lib/core.py").read_text(encoding="utf-8")
+    if "existing_model_path" not in core_source or "existing_valid" not in core_source:
+        errors.append("Custom model cache belum memvalidasi folder hasil ekstraksi")
+    if "Duplicate required filenames in ZIP are not allowed" not in core_source:
+        errors.append("Custom model ZIP belum menolak required filename yang ambigu")
+    if "progress_bar(t.n / files_length" not in core_source:
+        errors.append("Progress ekstraksi custom model masih berisiko melewati 100%")
     if "def preprocess_gemini_pronunciation(" not in core_source:
         errors.append("Pipeline DOCX/TXT belum terhubung ke Gemini pronunciation")
     if "cover_result is not False" not in core_source:

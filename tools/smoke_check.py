@@ -45,6 +45,8 @@ def main() -> int:
         errors.append("Export audio belum memvalidasi ffmpeg/ffprobe sebelum subprocess")
     if "never the active session" not in core_source or "if dir_name in current_user_dirs:" not in core_source:
         errors.append("Cleanup session lama masih berisiko menghapus sesi aktif")
+    if "def commit_checksum(" not in core_source or "without committing a changed value prematurely" not in core_source:
+        errors.append("Checksum sumber masih berisiko dikomit sebelum parse berhasil")
     if "def preprocess_gemini_pronunciation(" not in core_source:
         errors.append("Pipeline DOCX/TXT belum terhubung ke Gemini pronunciation")
     if "cover_result is not False" not in core_source:

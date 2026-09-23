@@ -660,6 +660,10 @@ set "PROVISIONED_VERSION="
 if exist "%SAFE_SCRIPT_DIR%\%PYTHON_ENV%\.provisioned" (
 	set /p PROVISIONED_VERSION=<"%SAFE_SCRIPT_DIR%\%PYTHON_ENV%\.provisioned"
 )
+if exist "%SAFE_SCRIPT_DIR%\%PYTHON_ENV%" if not exist "%SAFE_SCRIPT_DIR%\%PYTHON_ENV%\.provisioned" (
+	echo Detected incomplete %PYTHON_ENV% — removing and recreating...
+	rmdir /s /q "%SAFE_SCRIPT_DIR%\%PYTHON_ENV%"
+)
 if not exist "%SAFE_SCRIPT_DIR%\%PYTHON_ENV%" (
 	echo Creating ./%PYTHON_ENV% with python %PYTHON_VERSION%...
 	call "%CONDA_HOME%\Scripts\activate.bat"

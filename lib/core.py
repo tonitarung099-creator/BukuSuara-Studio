@@ -3984,7 +3984,16 @@ def convert_ebook(args:dict)->tuple:
             session['output_format'] = output_format
             session['output_channel'] = output_channel
             session['output_split'] = bool(args['output_split'])
-            session['output_split_hours'] = args['output_split_hours']if args['output_split_hours'] is not None else default_output_split_hours
+            split_hours_raw = args.get('output_split_hours')
+            if split_hours_raw is None:
+                split_hours_raw = default_output_split_hours
+            try:
+                split_hours = int(str(split_hours_raw).strip())
+            except (TypeError, ValueError):
+                return f"Invalid output split hours: {split_hours_raw}", False
+            if split_hours < 1:
+                return "Output split hours must be at least 1.", False
+            session['output_split_hours'] = str(split_hours)
             session['model_cache'] = f"{session['tts_engine']}-{session['fine_tuned']}"
             session['session_dir'] = os.path.join(tmp_dir, f'proc-{session_id}')
             session['status'] = status_tags['EDIT'] if session['blocks_preview'] else status_tags['CONVERTING'] 

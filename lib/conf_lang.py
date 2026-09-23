@@ -28,7 +28,7 @@ ebook2audiobook.cmd --help
 python app.py --help
 '''
 session_info = 'In headless mode, store it in case of interruption, crash,\nor reuse of a custom model or custom voice.\nYou can resume the conversion with the --session option.\n************************************************************************'
-default_language_code = 'eng' # ISO-639-3
+default_language_code = 'ind' # ISO-639-3 — BukuSuara Studio default: Bahasa Indonesia
 year_to_decades_languages = ['eng', 'deu', 'nld', 'nob', 'dan', 'swe']
 
 punctuation_switch = {

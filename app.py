@@ -1,6 +1,8 @@
-import argparse, json, socket, shutil, multiprocessing, sys, uuid, copy, warnings
+import argparse, json, socket, shutil, multiprocessing, sys, uuid, copy, warnings, os
 
 from pathlib import Path
+
+APP_ROOT = Path(__file__).resolve().parent
 
 from lib.conf import *
 from lib.conf_lang import default_language_code, language_mapping, install_info
@@ -485,7 +487,7 @@ Default to config.json model.""")
                             default_concurrency_limit=interface_concurrency_limit
                         ).launch(
                             debug=bool(int(os.environ.get('GRADIO_DEBUG', '0'))),
-                            show_error=debug_mode, favicon_path='./favicon.ico', 
+                            show_error=debug_mode, favicon_path=str(APP_ROOT / 'favicon.ico'), 
                             server_name=interface_host, 
                             server_port=interface_port, 
                             share= args['share'], 

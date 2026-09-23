@@ -55,6 +55,10 @@ def main() -> int:
         errors.append("Startup belum membuat folder runtime portable secara otomatis")
     if "os.makedirs(runtime_dir, exist_ok=True)" not in conf_source:
         errors.append("Folder runtime portable belum dibuat secara defensif")
+    if "_project_dir = os.path.dirname(_lib_dir)" not in conf_source:
+        errors.append("Path portable belum dipatok ke lokasi aplikasi")
+    if "open(os.path.join(_project_dir, 'VERSION.txt')" not in conf_source:
+        errors.append("VERSION.txt masih bergantung pada working directory")
 
     requirements = Path("requirements.txt").read_text(encoding="utf-8")
     if "./ext/py/demucs" in requirements:

@@ -247,6 +247,8 @@ def main() -> int:
     portable_pos = launcher_source.find("call :portable_env_ready", native_pos)
     if native_pos < 0 or portable_pos < 0 or scoop_pos < 0 or portable_pos > scoop_pos:
         errors.append("Fast-path portable belum dijalankan sebelum bootstrap Scoop")
+    if "call :run_portable_env\n\t\t\texit /b %ERRORLEVEL%" in launcher_source:
+        errors.append("Fast-path portable masih memakai %ERRORLEVEL% di dalam block")
 
     requirements = Path("requirements.txt").read_text(encoding="utf-8")
     if "./ext/py/demucs" in requirements:

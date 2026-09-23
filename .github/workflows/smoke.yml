@@ -54,6 +54,20 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             throw "Launcher gagal pada path dengan spasi/ampersand: $LASTEXITCODE"
           }
+      - name: Check BukuSuara wrapper with special characters
+        shell: powershell
+        run: |
+          $target = Join-Path $env:RUNNER_TEMP 'Buku & Suara Wrapper'
+          if (Test-Path $target) { Remove-Item -Recurse -Force $target }
+          New-Item -ItemType Directory -Path $target | Out-Null
+          Copy-Item -Path .\* -Destination $target -Recurse -Force
+          $dummy = Join-Path $target 'Contoh & Buku.epub'
+          New-Item -ItemType File -Path $dummy | Out-Null
+          & (Join-Path $target 'BukuSuara.cmd') --ebook $dummy --version
+          if ($LASTEXITCODE -ne 0) {
+            throw "BukuSuara.cmd gagal pada path khusus: $LASTEXITCODE"
+          }
+
       - name: Check browser helper timeout behavior
         shell: powershell
         run: |

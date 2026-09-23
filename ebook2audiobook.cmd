@@ -623,6 +623,13 @@ endlocal & set "PATH=%PATH%"
 set "missing_prog_array="
 goto :main
 
+:run_conda_env
+call python.exe -u "%SAFE_SCRIPT_DIR%\app.py" --script_mode %NATIVE% %ARGS%
+set "APP_RC=%ERRORLEVEL%"
+call conda deactivate >nul 2>&1
+call conda deactivate >nul 2>&1
+exit /b %APP_RC%
+
 :portable_env_ready
 if not exist "%SAFE_SCRIPT_DIR%\%PYTHON_ENV%\python.exe" exit /b 1
 if not exist "%SAFE_SCRIPT_DIR%\%PYTHON_ENV%\.provisioned" exit /b 1
@@ -1091,8 +1098,8 @@ if defined arguments.help (
         call :check_sitecustomized
         if errorlevel 1 goto :failed
         call :build_gui
-        call python.exe -u "%SAFE_SCRIPT_DIR%\app.py" --script_mode %SCRIPT_MODE% %ARGS%
-		call conda deactivate >nul && call conda deactivate >nul
+        call :run_conda_env
+        goto :eof
     ) else if "%SCRIPT_MODE%"=="%FULL_DOCKER%" (
         call :check_sitecustomized
         if errorlevel 1 goto :failed

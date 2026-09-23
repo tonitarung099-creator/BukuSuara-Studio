@@ -1,5 +1,6 @@
 from pathlib import Path
 import sys
+import py_compile
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -18,11 +19,17 @@ def main() -> int:
             f"Default tidak kompatibel: bahasa={default_language_code}, engine={default_tts_engine}"
         )
 
+    for source in ("lib/classes/gemini_agent.py", "lib/gradio.py"):
+        try:
+            py_compile.compile(source, doraise=True)
+        except py_compile.PyCompileError as exc:
+            errors.append(f"Syntax error {source}: {exc.msg}")
+
     requirements = Path("requirements.txt").read_text(encoding="utf-8")
     if "./ext/py/demucs" in requirements:
         errors.append("requirements.txt masih memakai dependency Demucs lokal yang tidak portable")
 
-    for required in ("demucs==4.1.0", "psutil", "Pillow", "markdown", "uvicorn"):
+    for required in ("demucs==4.1.0", "psutil", "Pillow", "markdown", "uvicorn", "google-genai"):
         if required.lower() not in requirements.lower():
             errors.append(f"Dependency wajib belum ada: {required}")
 

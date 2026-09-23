@@ -3057,7 +3057,12 @@ def combine_audio_sentences(session_id:str, file:str, block_id:str, sentence_cou
                 if session['cancellation_requested']:
                     return False
                 f.write(f"file {ffconcat_quote_path(path)}\n")
-        result = assemble_audio_chunks(concat_list, file, session['is_gui_process'])
+        result = assemble_audio_chunks(
+            concat_list,
+            file,
+            session['is_gui_process'],
+            should_stop=lambda: bool(session.get('cancellation_requested')),
+        )
         if not result:
             error = 'combine_audio_sentences() FFmpeg concat failed.'
             print(error)
@@ -3241,7 +3246,14 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
                     '-y', final_file
                 ]
             progress_desc = f'Export Part {part_num}' if part_num is not None else 'Export'
-            proc_pipe = SubprocessPipe(cmd, is_gui_process=is_gui_process, total_duration=get_audio_duration(combined_audio), msg='Export', on_progress=lambda p: _on_progress(p, progress_desc))
+            proc_pipe = SubprocessPipe(
+                cmd,
+                is_gui_process=is_gui_process,
+                total_duration=get_audio_duration(combined_audio),
+                msg='Export',
+                on_progress=lambda p: _on_progress(p, progress_desc),
+                should_stop=lambda: bool(session.get('cancellation_requested')),
+            )
             if not proc_pipe.result:
                 error = f'ffmpeg export failed for {final_file}'
                 print(error)
@@ -3413,7 +3425,12 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
                         path = Path(session['chapters_dir']) / file
                         f.write(f"file '{path.as_posix()}'\n")
                 merged_audio = Path(session['process_dir']) / f"{get_sanitized(session['metadata']['title'])}_part{part_idx+1:0{pad_width}d}.{default_audio_proc_format}"
-                result = assemble_audio_chunks(concat_list, merged_audio, is_gui_process)
+                result = assemble_audio_chunks(
+                    concat_list,
+                    merged_audio,
+                    is_gui_process,
+                    should_stop=lambda: bool(session.get('cancellation_requested')),
+                )
                 if not result:
                     error = f'assemble_audio_chunks() Final merge failed for part {part_idx+1}.'
                     print(error)
@@ -3438,7 +3455,12 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
                         return None
                     path = Path(session['chapters_dir']) / file
                     f.write(f"file '{path.as_posix()}'\n")
-            result = assemble_audio_chunks(concat_list, merged_audio, is_gui_process)
+            result = assemble_audio_chunks(
+                concat_list,
+                merged_audio,
+                is_gui_process,
+                should_stop=lambda: bool(session.get('cancellation_requested')),
+            )
             if not result:
                 print(f'assemble_audio_chunks() Final merge failed for {merged_audio}.')
                 return None
@@ -3453,7 +3475,12 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
         DependencyError(e)
         return None
 
-def assemble_audio_chunks(txt_file:str, out_file:str, is_gui_process:bool)->bool:
+def assemble_audio_chunks(
+    txt_file:str,
+    out_file:str,
+    is_gui_process:bool,
+    should_stop:Callable[[], bool]|None=None,
+)->bool:
 
     def _on_progress(p:float)->None:
         if is_gui_process:
@@ -3501,7 +3528,8 @@ def assemble_audio_chunks(txt_file:str, out_file:str, is_gui_process:bool)->bool
             is_gui_process=is_gui_process,
             total_duration=total_duration,
             msg='Assemble',
-            on_progress=_on_progress
+            on_progress=_on_progress,
+            should_stop=should_stop,
         )
         if proc_pipe.result and os.path.exists(out_file):
             msg = f'Completed → {out_file}'

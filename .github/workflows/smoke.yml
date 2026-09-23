@@ -41,7 +41,8 @@ jobs:
       - name: Check browser helper timeout behavior
         shell: powershell
         run: |
-          & .\.bh.ps1 -HostName 127.0.0.1 -Port 9 -TimeoutSeconds 5
-          if ($LASTEXITCODE -ne 1) {
-            throw "Expected browser helper timeout exit code 1, got $LASTEXITCODE"
+          & powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\.bh.ps1 -HostName 127.0.0.1 -Port 9 -TimeoutSeconds 5
+          $helperExit = $LASTEXITCODE
+          if ($helperExit -ne 1) {
+            throw "Expected browser helper timeout exit code 1, got $helperExit"
           }

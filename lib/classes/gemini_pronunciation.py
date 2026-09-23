@@ -48,6 +48,7 @@ class GeminiPronunciationProcessor:
         self.model = model or get_session_model(session_id) or DEFAULT_GEMINI_MODEL
         self.api_keys = get_session_api_keys(session_id)
         self.cache_path = os.path.join(process_dir, CACHE_FILENAME)
+        self.reviewed: set[str] = set()
         self.cache: dict[str, str] = self._load_cache()
 
     def _load_cache(self) -> dict[str, str]:
@@ -55,9 +56,15 @@ class GeminiPronunciationProcessor:
             if os.path.exists(self.cache_path):
                 data = json.loads(Path(self.cache_path).read_text(encoding="utf-8"))
                 if isinstance(data, dict):
+                    if isinstance(data.get("aliases"), dict):
+                        aliases = data.get("aliases", {})
+                        self.reviewed = {str(x) for x in data.get("reviewed", []) if str(x).strip()}
+                    else:
+                        aliases = data
+                        self.reviewed = {str(k) for k in aliases.keys()}
                     return {
                         str(k): str(v)
-                        for k, v in data.items()
+                        for k, v in aliases.items()
                         if self._valid_alias(str(k), str(v))
                     }
         except Exception:
@@ -67,8 +74,13 @@ class GeminiPronunciationProcessor:
     def _save_cache(self) -> None:
         Path(self.process_dir).mkdir(parents=True, exist_ok=True)
         tmp = self.cache_path + ".tmp"
+        payload = {
+            "version": 1,
+            "aliases": dict(sorted(self.cache.items())),
+            "reviewed": sorted(self.reviewed),
+        }
         Path(tmp).write_text(
-            json.dumps(dict(sorted(self.cache.items())), ensure_ascii=False, indent=2),
+            json.dumps(payload, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
         os.replace(tmp, self.cache_path)
@@ -180,7 +192,7 @@ class GeminiPronunciationProcessor:
 
     def build_dictionary(self, blocks: list[str], progress_callback=None) -> dict[str, str]:
         candidates = self.collect_candidates(blocks)
-        pending = [(term, ctx) for term, ctx in candidates.items() if term not in self.cache]
+        pending = [(term, ctx) for term, ctx in candidates.items() if term not in self.reviewed]
         if not pending:
             return dict(self.cache)
 
@@ -190,6 +202,7 @@ class GeminiPronunciationProcessor:
             chunk = pending[start:start + MAX_TERMS_PER_REQUEST]
             updates = self._request_chunk(chunk)
             self.cache.update(updates)
+            self.reviewed.update(term for term, _ in chunk)
             self._save_cache()
             if progress_callback:
                 progress_callback(chunk_index + 1, total_chunks, len(self.cache))

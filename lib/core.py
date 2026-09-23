@@ -3917,12 +3917,23 @@ def convert_ebook(args:dict)->tuple:
                                 session['tts_engine'],
                                 custom_src_name,
                             )
+                        runtime_model_files = [
+                            name for name in required_model_files
+                            if name.lower() != 'ref.wav'
+                        ]
+                        cached_voice = existing_model_path / f'{existing_model_path.name}.wav'
+                        needs_reference_voice = any(
+                            name.lower() == 'ref.wav' for name in required_model_files
+                        )
                         existing_valid = (
                             existing_model_path.is_dir()
-                            and all((existing_model_path / name).is_file() for name in required_model_files)
+                            and all((existing_model_path / name).is_file() for name in runtime_model_files)
+                            and (not needs_reference_voice or cached_voice.is_file())
                         )
                         if existing_valid:
                             session['custom_model'] = str(existing_model_path)
+                            if cached_voice.is_file():
+                                session['voice'] = str(cached_voice)
                         else:
                             try:
                                 if custom_src_path.is_dir():

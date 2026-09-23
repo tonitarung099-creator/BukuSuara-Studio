@@ -57,7 +57,8 @@ class Piper(TTSUtils, TTSRegistry, name='piper'):
             self.xtts_speakers = self._load_xtts_builtin_list()
             self.device = devices['CUDA']['proc'] if self.session['device'] in [devices['CUDA']['proc'], devices['ROCM']['proc'], devices['JETSON']['proc']] else self.session['device']
             self.engine = self.load_engine()
-            self.engine_zs = self._load_engine_zs(self.device)
+            # ZeroShot voice-conversion is expensive; load it only when cloning is actually used.
+            self.engine_zs = None
         except Exception as e:
             error = f'__init__() error: {e}'
             raise ValueError(error)
@@ -121,12 +122,6 @@ class Piper(TTSUtils, TTSRegistry, name='piper'):
                 if self.speaker is not None and self.speaker != custom_model_name:
                     if self.speaker not in default_engine_settings[self.tts_engine]['voices'] or custom_model_name is not None:
                         use_zs = True
-                if use_zs and not self.engine_zs:
-                    error = f'Engine {self.tts_zs_key} is None'
-                    return False, error
-                if use_zs:
-                    proc_dir = os.path.join(self.session['voice_dir'], 'proc')
-                    os.makedirs(proc_dir, exist_ok=True)
                 for part in sentence_parts:
                     part = part.strip()
                     if not part:
@@ -148,6 +143,13 @@ class Piper(TTSUtils, TTSRegistry, name='piper'):
                             part = part[:-1]
                         try:
                             if use_zs:
+                                if not self.engine_zs:
+                                    self.engine_zs = self._load_engine_zs(self.device)
+                                if not self.engine_zs:
+                                    error = f'Engine {self.tts_zs_key} could not be loaded'
+                                    return False, error
+                                proc_dir = os.path.join(self.session['voice_dir'], 'proc')
+                                os.makedirs(proc_dir, exist_ok=True)
                                 tmp_in_wav = os.path.join(proc_dir, f'{uuid.uuid4()}.wav')
                                 tmp_out_wav = os.path.join(proc_dir, f'{uuid.uuid4()}.wav')
                                 result = False

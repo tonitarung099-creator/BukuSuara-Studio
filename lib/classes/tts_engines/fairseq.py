@@ -104,13 +104,21 @@ class Fairseq(TTSUtils, TTSRegistry, name='fairseq'):
                     self.params['current_voice'], error = self._set_voice(self.params['block_voice'])
                     if self.params['current_voice'] is None and error is not None:
                         return False, error
-                use_zs = False
                 self.audio_segments = []
                 custom_model_name = os.path.basename(self.session['custom_model']) if self.session['custom_model'] is not None else None
-                self.speaker = Path(self.params['current_voice']).stem if self.params['current_voice'] is not None else None
-                if self.speaker is not None and self.speaker != custom_model_name:
-                    if self.speaker not in default_engine_settings[self.tts_engine]['voices'] or custom_model_name is not None:
-                        use_zs = True
+
+                def _refresh_voice_mode()->bool:
+                    self.speaker = Path(self.params['current_voice']).stem if self.params['current_voice'] is not None else None
+                    return bool(
+                        self.speaker is not None
+                        and self.speaker != custom_model_name
+                        and (
+                            self.speaker not in default_engine_settings[self.tts_engine]['voices']
+                            or custom_model_name is not None
+                        )
+                    )
+
+                use_zs = _refresh_voice_mode()
                 for part in sentence_parts:
                     part = part.strip()
                     if not part:
@@ -118,10 +126,7 @@ class Fairseq(TTSUtils, TTSRegistry, name='fairseq'):
                     if SML_TAG_PATTERN.fullmatch(part):
                         success, error = self._convert_sml(part)
                         if success:
-                            self.speaker = Path(self.params['current_voice']).stem if self.params['current_voice'] is not None else None
-                            if self.speaker is not None and self.speaker != custom_model_name:
-                                if self.speaker not in default_engine_settings[self.tts_engine]['voices'] or custom_model_name is not None:
-                                    use_zs = True
+                            use_zs = _refresh_voice_mode()
                         else:
                             return False, error
                         continue

@@ -46,3 +46,4 @@ jobs:
           if ($helperExit -ne 1) {
             throw "Expected browser helper timeout exit code 1, got $helperExit"
           }
+          exit 0

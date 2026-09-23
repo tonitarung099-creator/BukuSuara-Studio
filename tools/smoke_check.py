@@ -109,6 +109,8 @@ def main() -> int:
     app_source = Path("app.py").read_text(encoding="utf-8")
     if "name.lower().endswith(str(ext).lower())" not in app_source:
         errors.append("Headless Directory Mode masih case-sensitive untuk ekstensi ebook")
+    if "authoritative queue in the session" not in app_source:
+        errors.append("Headless Directory Mode belum menyinkronkan ebook_list ke session")
     if "The provided --custom_model" not in app_source:
         errors.append("Headless custom model belum divalidasi sebelum konversi")
     if "--output_dir must be an existing directory" not in app_source:

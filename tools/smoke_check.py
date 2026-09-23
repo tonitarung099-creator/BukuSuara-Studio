@@ -237,6 +237,16 @@ def main() -> int:
         errors.append("Versi .provisioned belum dipakai untuk reprovision dependency")
     if 'if exist "%SAFE_SCRIPT_DIR%\\%PYTHON_ENV%" if not exist "%SAFE_SCRIPT_DIR%\\%PYTHON_ENV%\\.provisioned" (' not in launcher_source:
         errors.append("Env tanpa .provisioned tidak lagi direcreate dengan aman")
+    if ":portable_env_ready\n" not in launcher_source or ":run_portable_env\n" not in launcher_source:
+        errors.append("Launcher belum punya fast-path python_env portable")
+    if 'call "%SAFE_SCRIPT_DIR%\\%PYTHON_ENV%\\python.exe" -u "%SAFE_SCRIPT_DIR%\\app.py"' not in launcher_source:
+        errors.append("Fast-path portable belum menjalankan Python lokal secara langsung")
+    native_marker = 'else if "%SCRIPT_MODE%"=="%NATIVE%" ('
+    native_pos = launcher_source.find(native_marker)
+    scoop_pos = launcher_source.find("call :check_scoop", native_pos)
+    portable_pos = launcher_source.find("call :portable_env_ready", native_pos)
+    if native_pos < 0 or portable_pos < 0 or scoop_pos < 0 or portable_pos > scoop_pos:
+        errors.append("Fast-path portable belum dijalankan sebelum bootstrap Scoop")
 
     requirements = Path("requirements.txt").read_text(encoding="utf-8")
     if "./ext/py/demucs" in requirements:

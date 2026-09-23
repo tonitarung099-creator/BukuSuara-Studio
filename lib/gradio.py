@@ -1,4 +1,5 @@
 from lib.core import *
+from lib.classes.gemini_agent import GeminiAgent, FREE_TIER_MODELS, DEFAULT_GEMINI_MODEL, parse_api_keys
 
 def build_interface(args:dict)->gr.Blocks:
     from lib.classes.tts_engines.common.preset_loader import load_engine_presets
@@ -23,6 +24,44 @@ def build_interface(args:dict)->gr.Blocks:
         fine_tuned_options = []
         audiobook_options = []
         options_output_split_hours = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
+
+        def _run_gemini_agent(session_id:str, api_keys_text:str, model:str, prompt:str, history:list|None)->tuple:
+            history = list(history or [])
+            prompt = (prompt or '').strip()
+            if not prompt:
+                return (
+                    history,
+                    '',
+                    'Tulis perintah untuk Agen Gemini.',
+                    gr.update(), gr.update(), gr.update(), gr.update()
+                )
+            session = context.get_session(session_id) if session_id else None
+            if not session or not session.get('id', False):
+                history.extend([
+                    {'role': 'user', 'content': prompt},
+                    {'role': 'assistant', 'content': 'Sesi BukuSuara belum siap. Buka Dashboard terlebih dahulu sampai sesi aplikasi aktif.'}
+                ])
+                return (
+                    history[-12:], '', 'Sesi BukuSuara belum aktif.',
+                    gr.update(), gr.update(), gr.update(), gr.update()
+                )
+            keys = parse_api_keys(api_keys_text)
+            agent = GeminiAgent(api_keys=keys or None, model=model or DEFAULT_GEMINI_MODEL)
+            result = agent.run(session=session, prompt=prompt, history=history)
+            history.extend([
+                {'role': 'user', 'content': prompt},
+                {'role': 'assistant', 'content': result.reply}
+            ])
+            return (
+                history[-12:],
+                '',
+                result.status,
+                gr.update(value=session.get('output_format')),
+                gr.update(value=session.get('output_channel')),
+                gr.update(value=bool(session.get('blocks_preview'))),
+                gr.update(value=float(session.get('xtts_speed', 1.0)))
+            )
+
         page_size = 15
         visible_gr_tab_xtts_params = interface_component_options['gr_tab_xtts_params']
         visible_gr_tab_bark_params = interface_component_options['gr_tab_bark_params']
@@ -890,6 +929,73 @@ def build_interface(args:dict)->gr.Blocks:
                             gr_abs_audiobook = gr.Textbox(elem_id='gr_abs_audiobook', label='Audiobook', lines=1, max_lines=1, interactive=False, visible=True)
                             gr_abs_status = gr.Textbox(elem_id='gr_abs_status', label='Status', lines=1, max_lines=1, interactive=False, visible=True)
                             gr_abs_upload_btn = gr.Button(elem_id='gr_abs_upload_btn', value='🡅', elem_classes=['gr-abs-upload-btn'], variant='secondary', interactive=False)
+
+                    with gr.Tab('🤖 Agen Gemini', elem_id='gr_tab_gemini_agent', elem_classes='gr-tab'):
+                        gr.Markdown('''
+### Agen Gemini — mode hemat API gratis
+Agen dapat membaca **setting ringkas** BukuSuara dan mengubah setting aman yang sudah diberi tool lokal.
+Isi buku/file **tidak dikirim otomatis** ke Gemini. Hanya perintah yang Anda ketik, riwayat chat ringkas, dan setting aplikasi yang dikirim.
+
+> API key hanya digunakan saat request berjalan. Pisahkan beberapa key dengan koma. Rotasi key membantu hanya bila kuota project-nya berbeda; limit Gemini berlaku per project.
+                        ''')
+                        with gr.Row():
+                            gr_gemini_api_keys = gr.Textbox(
+                                label='API Key Gemini',
+                                type='password',
+                                placeholder='AIza... , AIza... (opsional beberapa key)',
+                                lines=1,
+                                interactive=True,
+                                scale=2
+                            )
+                            gr_gemini_model = gr.Dropdown(
+                                label='Model',
+                                choices=FREE_TIER_MODELS,
+                                value=DEFAULT_GEMINI_MODEL,
+                                type='value',
+                                interactive=True,
+                                scale=1
+                            )
+                        gr_gemini_chat = gr.Chatbot(
+                            label='Percakapan Agen',
+                            type='messages',
+                            height=390,
+                            value=[]
+                        )
+                        gr_gemini_status = gr.Textbox(
+                            label='Status API',
+                            value='Siap. Default: Gemini 3.5 Flash-Lite.',
+                            interactive=False,
+                            lines=1
+                        )
+                        with gr.Row():
+                            gr_gemini_prompt = gr.Textbox(
+                                label='Perintah',
+                                placeholder='Contoh: ubah hasil jadi MP3 mono dan aktifkan pratinjau bab',
+                                lines=2,
+                                max_lines=4,
+                                scale=5
+                            )
+                            gr_gemini_send = gr.Button('Kirim', variant='primary', scale=1)
+
+                        gemini_outputs = [
+                            gr_gemini_chat, gr_gemini_prompt, gr_gemini_status,
+                            gr_output_format_list, gr_output_channel_list, gr_blocks_preview, gr_xtts_speed
+                        ]
+                        gemini_inputs = [
+                            gr_session, gr_gemini_api_keys, gr_gemini_model, gr_gemini_prompt, gr_gemini_chat
+                        ]
+                        gr_gemini_send.click(
+                            fn=_run_gemini_agent,
+                            inputs=gemini_inputs,
+                            outputs=gemini_outputs,
+                            show_progress='minimal'
+                        )
+                        gr_gemini_prompt.submit(
+                            fn=_run_gemini_agent,
+                            inputs=gemini_inputs,
+                            outputs=gemini_outputs,
+                            show_progress='minimal'
+                        )
 
             gr_blocks_page = gr.Number(value=0, visible=False, precision=0)
             gr_blocks_data = gr.State([])

@@ -3079,10 +3079,10 @@ Chat agent tidak mengirim seluruh isi buku. Untuk **DOCX/TXT Bahasa Indonesia**,
                             session['ebook'] = session['ebook_src'] = None
                     if isinstance(session.get('voice'), str):
                         if not os.path.exists(session['voice']):
-                            session['voice'] = session['ebook_src'] = None
+                            # Missing voice must not invalidate the selected ebook.
+                            session['voice'] = None
                     if isinstance(session.get('custom_model'), str):
-                        custom_model_dir = session.get('custom_model_dir')
-                        if isinstance(custom_model_dir, str) and not os.path.exists(custom_model_dir):
+                        if not os.path.exists(session['custom_model']):
                             session['custom_model'] = None
                     if isinstance(session.get('tts_engine'), str):
                         models = load_engine_presets(session['tts_engine'])

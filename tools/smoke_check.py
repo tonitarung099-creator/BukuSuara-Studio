@@ -47,6 +47,10 @@ def main() -> int:
         errors.append("Export audio belum memvalidasi ffmpeg/ffprobe sebelum subprocess")
     if "input_channels == target_channels" not in core_source:
         errors.append("Stream-copy audio masih dapat mengabaikan pilihan mono/stereo")
+    if "temp_audio = str(final_path.with_name" not in core_source or "os.replace(temp_audio, final_file)" not in core_source:
+        errors.append("Export audio belum transaksional terhadap file parsial")
+    if "temp_vtt = final_vtt + '.part'" not in core_source or "os.replace(temp_vtt, final_vtt)" not in core_source:
+        errors.append("Export VTT belum transaksional")
     flac_branch = core_source.split("elif session['output_format'] == 'flac':", 1)[1].split("else:", 1)[0] if "elif session['output_format'] == 'flac':" in core_source else ""
     if "'-f', 'ffmetadata', '-i', metadata_file" not in flac_branch or "'-map_metadata', '1'" not in flac_branch:
         errors.append("FLAC re-encode belum membawa FFMETADATA")

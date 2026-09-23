@@ -82,6 +82,12 @@ def main() -> int:
     if "standalone/static FFmpeg" not in app_source or "if ffmpeg and ffprobe:" not in app_source:
         errors.append("Startup Windows masih menolak FFmpeg standalone/static")
 
+    gradio_source = Path("lib/gradio.py").read_text(encoding="utf-8")
+    if "Missing voice must not invalidate the selected ebook." not in gradio_source:
+        errors.append("Restore session masih berisiko menghapus ebook_src ketika voice hilang")
+    if "if not os.path.exists(session['custom_model']):" not in gradio_source:
+        errors.append("Restore session belum memvalidasi path custom model secara langsung")
+
     requirements = Path("requirements.txt").read_text(encoding="utf-8")
     if "./ext/py/demucs" in requirements:
         errors.append("requirements.txt masih memakai dependency Demucs lokal yang tidak portable")

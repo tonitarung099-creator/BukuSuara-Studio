@@ -76,18 +76,25 @@ def kill_previous_instances(script_name: str):
             continue
 
 def register_dlls()->str|bool:
+    """Register FFmpeg shared DLLs when present, but allow standalone/static FFmpeg too."""
+    userprofile = os.environ.get('USERPROFILE', str(Path.home()))
     candidates = [
-        Path(os.environ['USERPROFILE']) / 'scoop' / 'apps' / 'ffmpeg-shared' / 'current' / 'bin',
+        Path(userprofile) / 'scoop' / 'apps' / 'ffmpeg-shared' / 'current' / 'bin',
         Path(os.environ.get('PROGRAMFILES', r'C:\Program Files')) / 'ffmpeg' / 'bin',
         Path(os.environ.get('LOCALAPPDATA', '')) / 'Microsoft' / 'WinGet' / 'Links',
     ]
-    found = shutil.which('ffmpeg')
-    if found:
-        candidates.append(Path(found).parent)
+    ffmpeg = shutil.which('ffmpeg')
+    ffprobe = shutil.which('ffprobe')
+    if ffmpeg:
+        candidates.append(Path(ffmpeg).parent)
     for p in candidates:
         if p and p.is_dir() and any(p.glob('avcodec-*.dll')):
             os.add_dll_directory(str(p))
             return str(p)
+    # Static/standalone FFmpeg distributions do not expose avcodec DLLs.
+    # They are still valid for BukuSuara's subprocess-based audio pipeline.
+    if ffmpeg and ffprobe:
+        return True
     return False
 
 def main()->None:
@@ -282,7 +289,7 @@ Default to config.json model.""")
                 sys.exit(1)
 
         if DEVICE_SYSTEM == systems['WINDOWS'] and not register_dlls():
-            error = 'WARNING: shared DLLs not found. aborting…'
+            error = 'FFmpeg/ffprobe not found. Install or bundle FFmpeg before starting BukuSuara.'
             print(error)
             sys.exit(1)
 

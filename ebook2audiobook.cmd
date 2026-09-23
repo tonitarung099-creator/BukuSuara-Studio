@@ -124,22 +124,27 @@ for /f "tokens=1* delims==" %%A in ('set arguments. 2^>nul') do set "%%A="
 ::::::::::::::::::::::::::::::: CORE FUNCTIONS
 
 if not "%~1"=="" (
-    setlocal EnableDelayedExpansion
-    for /f "delims=" %%V in ('python -c "from lib.conf import cli_options; print(' '.join(cli_options))"') do set "VALID_ARGS=%%V"
-    for %%A in (%*) do (
-        set "ARG=%%~A"
-        if "!ARG:~0,2!"=="--" (
-            set "FOUND=0"
-            for %%V in (!VALID_ARGS!) do (
-                if /i "!ARG!"=="%%V" set "FOUND=1"
-            )
-            if !FOUND! equ 0 (
-                echo ERROR: Unknown option "!ARG!"
-                exit /b 1
+    where.exe /Q python >nul 2>&1
+    if not errorlevel 1 (
+        setlocal EnableDelayedExpansion
+        for /f "delims=" %%V in ('python -c "from lib.conf import cli_options; print(' '.join(cli_options))"') do set "VALID_ARGS=%%V"
+        if defined VALID_ARGS (
+            for %%A in (%*) do (
+                set "ARG=%%~A"
+                if "!ARG:~0,2!"=="--" (
+                    set "FOUND=0"
+                    for %%V in (!VALID_ARGS!) do (
+                        if /i "!ARG!"=="%%V" set "FOUND=1"
+                    )
+                    if !FOUND! equ 0 (
+                        echo ERROR: Unknown option "!ARG!"
+                        exit /b 1
+                    )
+                )
             )
         )
+        endlocal
     )
-    endlocal
 )
 
 :parse_args
@@ -357,6 +362,7 @@ if errorlevel 1 (
 exit /b 0
 
 :check_scoop_buckets
+setlocal EnableDelayedExpansion
 call "%PS_EXE%" %PS_ARGS% -Command "scoop bucket list" > "%TEMP%\scoop_buckets.txt" 2>&1
 set "_MISSING_BUCKETS="
 findstr /i "muggle" "%TEMP%\scoop_buckets.txt" >nul 2>&1 || set "_MISSING_BUCKETS=!_MISSING_BUCKETS! muggle"
@@ -364,12 +370,13 @@ findstr /i "extras" "%TEMP%\scoop_buckets.txt" >nul 2>&1 || set "_MISSING_BUCKET
 findstr /i "versions" "%TEMP%\scoop_buckets.txt" >nul 2>&1 || set "_MISSING_BUCKETS=!_MISSING_BUCKETS! versions"
 del "%TEMP%\scoop_buckets.txt" >nul 2>&1
 if defined _MISSING_BUCKETS (
-    exit /b 1
+    endlocal & exit /b 1
 )
-exit /b 0
+endlocal & exit /b 0
 
 :check_programs
 setlocal EnableDelayedExpansion
+set "missing_prog_array="
 for %%p in (%HOST_PROGRAMS%) do (
     set "prog=%%p"
     set "_found=0"

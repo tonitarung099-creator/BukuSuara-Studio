@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -20,7 +21,7 @@ from lib.classes.gemini_agent import (
 )
 
 CACHE_FILENAME = "gemini_pronunciation_map.json"
-PRONUNCIATION_VERSION = 1
+PRONUNCIATION_VERSION = 2
 MAX_TERMS_PER_REQUEST = 60
 MAX_CONTEXT_CHARS = 180
 
@@ -51,6 +52,7 @@ class GeminiPronunciationProcessor:
         self.api_keys = get_session_api_keys(session_id)
         self.cache_path = os.path.join(process_dir, CACHE_FILENAME)
         self.reviewed: set[str] = set()
+        self.reviewed_context: dict[str, str] = {}
         self.cache: dict[str, str] = self._load_cache()
 
     def _load_cache(self) -> dict[str, str]:
@@ -61,6 +63,12 @@ class GeminiPronunciationProcessor:
                     if isinstance(data.get("aliases"), dict):
                         aliases = data.get("aliases", {})
                         self.reviewed = {str(x) for x in data.get("reviewed", []) if str(x).strip()}
+                        if isinstance(data.get("reviewed_context"), dict):
+                            self.reviewed_context = {
+                                str(k): str(v)
+                                for k, v in data.get("reviewed_context", {}).items()
+                                if str(k).strip() and str(v).strip()
+                            }
                     else:
                         aliases = data
                         self.reviewed = {str(k) for k in aliases.keys()}
@@ -80,6 +88,7 @@ class GeminiPronunciationProcessor:
             "version": PRONUNCIATION_VERSION,
             "aliases": dict(sorted(self.cache.items())),
             "reviewed": sorted(self.reviewed),
+            "reviewed_context": dict(sorted(self.reviewed_context.items())),
         }
         Path(tmp).write_text(
             json.dumps(payload, ensure_ascii=False, indent=2),
@@ -98,6 +107,11 @@ class GeminiPronunciationProcessor:
         if not _ALLOWED_ALIAS.fullmatch(alias):
             return False
         return True
+
+    @staticmethod
+    def _context_fingerprint(context: str) -> str:
+        normalized = " ".join((context or "").casefold().split())
+        return hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:16]
 
     @staticmethod
     def _context(text: str, term: str) -> str:
@@ -202,7 +216,11 @@ class GeminiPronunciationProcessor:
 
     def build_dictionary(self, blocks: list[str], progress_callback=None) -> dict[str, str]:
         candidates = self.collect_candidates(blocks)
-        pending = [(term, ctx) for term, ctx in candidates.items() if term not in self.reviewed]
+        pending = [
+            (term, ctx)
+            for term, ctx in candidates.items()
+            if self.reviewed_context.get(term) != self._context_fingerprint(ctx)
+        ]
         if not pending:
             return dict(self.cache)
 
@@ -211,8 +229,13 @@ class GeminiPronunciationProcessor:
             start = chunk_index * MAX_TERMS_PER_REQUEST
             chunk = pending[start:start + MAX_TERMS_PER_REQUEST]
             updates = self._request_chunk(chunk)
+            # Context may have changed since the previous run. Remove old aliases
+            # for reviewed terms first, then keep only the fresh Gemini decisions.
+            for term, context in chunk:
+                self.cache.pop(term, None)
+                self.reviewed.add(term)
+                self.reviewed_context[term] = self._context_fingerprint(context)
             self.cache.update(updates)
-            self.reviewed.update(term for term, _ in chunk)
             self._save_cache()
             if progress_callback:
                 progress_callback(chunk_index + 1, total_chunks, len(self.cache))

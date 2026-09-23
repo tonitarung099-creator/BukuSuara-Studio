@@ -70,6 +70,12 @@ def main() -> int:
     if "open(os.path.join(_project_dir, 'VERSION.txt')" not in conf_source:
         errors.append("VERSION.txt masih bergantung pada working directory")
 
+    app_source = Path("app.py").read_text(encoding="utf-8")
+    if "name.lower().endswith(str(ext).lower())" not in app_source:
+        errors.append("Headless Directory Mode masih case-sensitive untuk ekstensi ebook")
+    if "The provided --custom_model" not in app_source:
+        errors.append("Headless custom model belum divalidasi sebelum konversi")
+
     requirements = Path("requirements.txt").read_text(encoding="utf-8")
     if "./ext/py/demucs" in requirements:
         errors.append("requirements.txt masih memakai dependency Demucs lokal yang tidak portable")

@@ -3824,6 +3824,33 @@ def preprocess_gemini_pronunciation(session_id:str, raw_blocks:list)->tuple[list
         return raw_blocks, f'Gemini pronunciation error: {e}'
 
 
+def disambiguate_directory_ebook_name(session:Any, ebook_name:str, ebook_src:str)->str:
+    """Avoid cache/output collisions for different Directory Mode files with the same stem."""
+    if session.get('ebook_mode') != ebook_modes['DIRECTORY']:
+        return ebook_name
+    ebook_list = session.get('ebook_list')
+    if not isinstance(ebook_list, list) or len(ebook_list) < 2:
+        return ebook_name
+
+    def normalized_stem(path:Any)->str:
+        return strip_invalid_filename_characters(get_sanitized(Path(str(path)).stem))
+
+    collisions = [path for path in ebook_list if normalized_stem(path) == ebook_name]
+    if len(collisions) < 2:
+        return ebook_name
+
+    source = Path(str(ebook_src))
+    ext = get_sanitized(source.suffix.lower().lstrip('.')) or 'file'
+    candidate = f'{ebook_name}_{ext}'
+    same_ext = [
+        path for path in collisions
+        if Path(str(path)).suffix.lower() == source.suffix.lower()
+    ]
+    if len(same_ext) > 1:
+        digest = hashlib.sha1(os.path.abspath(str(ebook_src)).encode('utf-8')).hexdigest()[:8]
+        candidate = f'{candidate}_{digest}'
+    return strip_invalid_filename_characters(candidate)
+
 def convert_ebook(args:dict)->tuple:
     try:
         global context
@@ -3915,6 +3942,8 @@ def convert_ebook(args:dict)->tuple:
                 ebook_file = strip_invalid_filename_characters(Path(session['ebook_src']).name)
                 ebook_name = get_sanitized(Path(session['ebook_src']).stem)
             ebook_name = strip_invalid_filename_characters(ebook_name)
+            if session['ebook_mode'] == ebook_modes['DIRECTORY'] and session.get('ebook_src'):
+                ebook_name = disambiguate_directory_ebook_name(session, ebook_name, session['ebook_src'])
             if session['ebook_mode'] != ebook_modes['TEXT']:
                 if session.get('ebook_loaded') != session['ebook_src']:
                     session['blocks_orig'] = {}

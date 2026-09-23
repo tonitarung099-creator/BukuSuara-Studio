@@ -55,6 +55,10 @@ def main() -> int:
         errors.append("Finalize masih bisa meninggalkan status CONVERTING setelah pembatalan/error awal")
     if "clean_title = ffmeta_escape(" not in core_source:
         errors.append("Judul chapter FFmpeg belum memakai escaping metadata yang konsisten")
+    if "def ffconcat_quote_path(" not in core_source or "def ffconcat_unquote_path(" not in core_source:
+        errors.append("Path FFmpeg concat belum aman untuk apostrof")
+    if 'f.write(f"file {ffconcat_quote_path(path)}' not in core_source:
+        errors.append("Generator FFmpeg concat masih menulis path mentah")
     if "def preprocess_gemini_pronunciation(" not in core_source:
         errors.append("Pipeline DOCX/TXT belum terhubung ke Gemini pronunciation")
     if "cover_result is not False" not in core_source:

@@ -3653,6 +3653,10 @@ def preprocess_gemini_pronunciation(session_id:str, raw_blocks:list)->tuple[list
         if not gemini_pronunciation_required(session):
             return raw_blocks, None
 
+        # DOCX/TXT Indonesian flow is intentionally hands-off: Gemini prepares
+        # pronunciation and the conversion continues directly without manual block editing.
+        session['blocks_preview'] = False
+
         processor = GeminiPronunciationProcessor(session_id, session['process_dir'])
         if not processor.api_keys:
             return raw_blocks, (

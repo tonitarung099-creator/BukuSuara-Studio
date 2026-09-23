@@ -268,34 +268,13 @@ if defined arguments.version (
 goto :main
 
 ::::::::::::::: DESKTOP APP
-:make_shortcut
-set "shortcut=%~1"
-"%PS_EXE%" %PS_ARGS% -Command "$s=New-Object -ComObject WScript.Shell; $sc=$s.CreateShortcut('%shortcut%'); $sc.TargetPath='cmd.exe'; $sc.Arguments='/k ""cd /d """"%SAFE_SCRIPT_DIR%"""" && """"%APP_FILE%""""""'; $sc.WorkingDirectory='%SAFE_SCRIPT_DIR%'; $sc.IconLocation='%ICON_PATH%'; $sc.Save()"
-exit /b
-
 :build_gui
-if /i not "%HEADLESS_FOUND%"=="%ARGS%" (
-    if not exist "%STARTMENU_DIR%" mkdir "%STARTMENU_DIR%"
-    if not exist "%STARTMENU_LNK%" (
-        call :make_shortcut "%STARTMENU_LNK%"
-        call :make_shortcut "%DESKTOP_LNK%"
+rem Portable mode: never create Start Menu/Desktop shortcuts or uninstall registry entries.
+rem HEADLESS_FOUND equals ARGS only when --headless is absent.
+if /i "%HEADLESS_FOUND%"=="%ARGS%" (
+    if exist "%BROWSER_HELPER%" (
+        start "BukuSuara Studio" /min "%PS_EXE%" %PS_ARGS% -File "%BROWSER_HELPER%" -HostName "%TEST_HOST%" -Port %TEST_PORT%
     )
-    for /f "skip=1 delims=" %%L in ('tasklist /v /fo csv /fi "imagename eq powershell.exe" 2^>nul') do (
-        echo %%L | findstr /i "%APP_NAME%" >nul && (
-            for /f "tokens=2 delims=," %%A in ("%%L") do (
-                taskkill /PID %%~A /F >nul 2>&1
-            )
-        )
-    )
-    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\%APP_NAME%" /v "DisplayName" /d "%APP_NAME%" /f >nul 2>&1
-    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\%APP_NAME%" /v "DisplayVersion" /d "%APP_VERSION%" /f >nul 2>&1
-    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\%APP_NAME%" /v "Publisher" /d "ebook2audiobook Team" /f >nul 2>&1
-    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\%APP_NAME%" /v "InstallLocation" /d "%SAFE_SCRIPT_DIR%" /f >nul 2>&1
-    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\%APP_NAME%" /v "UninstallString" /d "\"%UNINSTALLER%\"" /f >nul 2>&1
-    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\%APP_NAME%" /v "DisplayIcon" /d "%ICON_PATH%" /f >nul 2>&1
-    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\%APP_NAME%" /v "NoModify" /t REG_DWORD /d 1 /f >nul 2>&1
-    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\%APP_NAME%" /v "NoRepair" /t REG_DWORD /d 1 /f >nul 2>&1
-    start "%APP_NAME%" /min "%PS_EXE%" %PS_ARGS% -File "%BROWSER_HELPER%" -HostName "%TEST_HOST%" -Port %TEST_PORT%
 )
 exit /b 0
 :::::: END OF DESKTOP APP

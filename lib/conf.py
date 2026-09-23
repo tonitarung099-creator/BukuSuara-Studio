@@ -210,8 +210,17 @@ os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 os.environ['OMP_NUM_THREADS'] = '1'
 os.environ['SYCL_IN_MEM_CACHE_EVICTION_THRESHOLD'] = str(512 * 1024 * 1024)
 if DEVICE_SYSTEM == systems['WINDOWS']:
-    os.environ['ESPEAK_DATA_PATH'] = os.path.expandvars(r"%USERPROFILE%\scoop\apps\espeak-ng\current\espeak-ng-data")
-
+    # Keep a valid launcher-provided path; Scoop layouts differ between packages.
+    existing_espeak_data = os.environ.get('ESPEAK_DATA_PATH')
+    espeak_candidates = [
+        existing_espeak_data,
+        os.path.expandvars(r"%USERPROFILE%\scoop\apps\espeak-ng\current\eSpeak NG\espeak-ng-data"),
+        os.path.expandvars(r"%USERPROFILE%\scoop\apps\espeak-ng\current\espeak-ng-data"),
+    ]
+    for espeak_data in espeak_candidates:
+        if espeak_data and os.path.isdir(espeak_data):
+            os.environ['ESPEAK_DATA_PATH'] = espeak_data
+            break
 # ---------------------------------------------------------------------
 # Global settings
 # ---------------------------------------------------------------------

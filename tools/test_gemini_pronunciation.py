@@ -6,13 +6,25 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from lib.classes.gemini_agent import MAX_API_KEYS, parse_api_keys
+from lib.classes.gemini_agent import (
+    MAX_API_KEYS,
+    available_api_keys,
+    mark_api_key_failure,
+    parse_api_keys,
+)
 from lib.classes.gemini_pronunciation import GeminiPronunciationProcessor
 
 
 def main() -> None:
     keys = [f"key-{i:03d}" for i in range(105)]
-    assert len(parse_api_keys(",".join(keys))) == MAX_API_KEYS == 100
+    parsed = parse_api_keys(",".join(keys))
+    assert len(parsed) == MAX_API_KEYS == 100
+
+    # A limited key must not be retried immediately; the next ready key is used.
+    limited, ready = parsed[0], parsed[1]
+    mark_api_key_failure(limited, "quota")
+    available = available_api_keys([limited, ready])
+    assert available == [(1, ready)], "cooldown must prevent immediate reuse of limited key"
 
     with TemporaryDirectory() as tmp:
         processor = GeminiPronunciationProcessor("ci-test", tmp)

@@ -371,6 +371,7 @@ def analyze_uploaded_file(zip_path:str, required_files:list[str])->bool:
             print(error)
             return False
         files_in_zip = {}
+        basename_counts = {}
         empty_files = set()
         with zipfile.ZipFile(zip_path, 'r') as zf:
             for file_info in zf.infolist():
@@ -378,19 +379,24 @@ def analyze_uploaded_file(zip_path:str, required_files:list[str])->bool:
                 if file_info.is_dir():
                     continue
                 base_name = os.path.basename(file_name)
+                basename_counts[base_name] = basename_counts.get(base_name, 0) + 1
                 files_in_zip[base_name] = file_info.file_size
                 if file_info.file_size == 0:
                     empty_files.add(base_name)
         required_files = [file for file in required_files]
         missing_files = [f for f in required_files if f not in files_in_zip]
         required_empty_files = [f for f in required_files if f in empty_files]
+        duplicate_required = [f for f in required_files if basename_counts.get(f, 0) > 1]
         if missing_files:
             msg = f'Missing required files: {missing_files}'
             print(msg)
         if required_empty_files:
             msg = f'Required files with 0 KB: {required_empty_files}'
             print(msg)
-        return not missing_files and not required_empty_files
+        if duplicate_required:
+            msg = f'Duplicate required filenames in ZIP are not allowed: {duplicate_required}'
+            print(msg)
+        return not missing_files and not required_empty_files and not duplicate_required
     except zipfile.BadZipFile:
         error = 'The file is not a valid ZIP archive.'
         print(error)
@@ -406,8 +412,7 @@ def extract_custom_model(session_id)->str|None:
         file_src = session['custom_model']
         required_files = default_engine_settings[session['tts_engine']]['files']
         model_path = None
-        model_name = re.sub('.zip', '', os.path.basename(file_src), flags=re.IGNORECASE)
-        model_name = get_sanitized(model_name)
+        model_name = get_sanitized(Path(file_src).stem)
         try:
             with zipfile.ZipFile(file_src, 'r') as zip_ref:
                 files = zip_ref.namelist()
@@ -424,8 +429,8 @@ def extract_custom_model(session_id)->str|None:
                             with zip_ref.open(f) as src, open(out_path, 'wb') as dst:
                                 shutil.copyfileobj(src, dst)
                         t.update(1)
-                        if session['is_gui_process']:
-                            progress_bar((t.n + 1) / files_length, desc=msg)
+                        if session['is_gui_process'] and files_length:
+                            progress_bar(t.n / files_length, desc=msg)
             if model_path is not None:
                 msg = f'Normalizing ref.wav…'
                 print(msg)
@@ -455,6 +460,9 @@ def extract_custom_model(session_id)->str|None:
             DependencyError(e)
             error = f'extract_custom_model Exception: {e}'
             print(error)
+        if model_path and os.path.isdir(model_path):
+            # Never leave a half-extracted model that could be mistaken for a valid cache.
+            shutil.rmtree(model_path, ignore_errors=True)
         if session['is_gui_process']:
             if os.path.exists(file_src):
                 os.remove(file_src)
@@ -3864,20 +3872,36 @@ def convert_ebook(args:dict)->tuple:
                 if error is None:
                     delete_unused_tmp_dirs(session_id, audiobooks_cli_dir, tmp_expire)
                     if session['custom_model'] is not None:
-                        if not os.path.exists(session['custom_model_dir']):
-                            os.makedirs(session['custom_model_dir'], exist_ok=True)
+                        os.makedirs(session['custom_model_dir'], exist_ok=True)
                         custom_src_path = Path(session['custom_model'])
-                        custom_src_name = custom_src_path.stem
-                        if not os.path.exists(os.path.join(session['custom_model_dir'], custom_src_name)):
+                        required_model_files = default_engine_settings[session['tts_engine']]['files']
+                        if custom_src_path.is_dir():
+                            existing_model_path = custom_src_path
+                        else:
+                            custom_src_name = get_sanitized(custom_src_path.stem)
+                            existing_model_path = Path(
+                                session['custom_model_dir'],
+                                session['tts_engine'],
+                                custom_src_name,
+                            )
+                        existing_valid = (
+                            existing_model_path.is_dir()
+                            and all((existing_model_path / name).is_file() for name in required_model_files)
+                        )
+                        if existing_valid:
+                            session['custom_model'] = str(existing_model_path)
+                        else:
                             try:
-                                if analyze_uploaded_file(session['custom_model'], default_engine_settings[session['tts_engine']]['files']):
+                                if custom_src_path.is_dir():
+                                    error = f'{custom_src_path.name} is missing mandatory model files'
+                                elif analyze_uploaded_file(str(custom_src_path), required_model_files):
                                     model = extract_custom_model(session_id)
                                     if model is not None:
                                         session['custom_model'] = model
                                     else:
-                                        error = f"{model} could not be extracted or mandatory files are missing"
+                                        error = 'Custom model could not be extracted or mandatory files are missing'
                                 else:
-                                    error = f'{os.path.basename(session["custom_model"])} is not a valid model or some required files are missing'
+                                    error = f'{custom_src_path.name} is not a valid model or some required files are missing'
                             except ModuleNotFoundError as e:
                                 error = f"No presets module for TTS engine '{session['tts_engine']}': {e}"
                     if session.get('voice'):

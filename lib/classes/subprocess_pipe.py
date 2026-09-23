@@ -58,7 +58,8 @@ class SubprocessPipe:
 
     def _run_process(self)->bool:
         try:
-            is_ffmpeg = "ffmpeg" in os.path.basename(self.cmd[0])
+            executable_name = os.path.basename(str(self.cmd[0])).lower()
+            is_ffmpeg = "ffmpeg" in executable_name
             if is_ffmpeg:
                 self.process = subprocess.Popen(
                     self.cmd,

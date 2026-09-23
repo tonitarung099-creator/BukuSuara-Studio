@@ -54,8 +54,10 @@ def is_running_in_container()->bool:
     return os.environ.get("IN_DOCKER") == "1"
 
 def is_port_in_use(port:int)->bool:
-    with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as s:
-        return s.connect_ex(('0.0.0.0',port))==0
+    # Connect to loopback: 0.0.0.0 is a bind address, not a reliable connect target.
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(0.5)
+        return s.connect_ex(('127.0.0.1', port)) == 0
 
 def kill_previous_instances(script_name: str):
     current_pid = os.getpid()
@@ -483,11 +485,13 @@ Default to config.json model.""")
                     c.progress_bar = c.gr.Progress(track_tqdm=False)
                     app = build_interface(args)
                     if app is not None:
+                        favicon_file = APP_ROOT / 'favicon.ico'
+                        favicon_value = str(favicon_file) if favicon_file.is_file() else None
                         app.queue(
                             default_concurrency_limit=interface_concurrency_limit
                         ).launch(
                             debug=bool(int(os.environ.get('GRADIO_DEBUG', '0'))),
-                            show_error=debug_mode, favicon_path=str(APP_ROOT / 'favicon.ico'), 
+                            show_error=debug_mode, favicon_path=favicon_value, 
                             server_name=interface_host, 
                             server_port=interface_port, 
                             share= args['share'], 

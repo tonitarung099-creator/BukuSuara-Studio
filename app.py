@@ -196,7 +196,7 @@ Keys may be absolute paths or basenames. Example:
 {"book1.epub": "/voices/eng/adult/female/alice.wav", "/abs/path/book2.epub": null}''')
     headless_optional_group.add_argument(cli_options[12], type=str, default=default_device, choices=list(devices.keys())+[k.lower() for k in devices.keys()], help=f'''Processor unit type for the conversion.
 Default is set in ./lib/conf.py if not present. Fall back to CPU if CUDA or MPS is not available.''')
-    headless_optional_group.add_argument(cli_options[13], type=str, default=TTS_ENGINES['XTTS'], choices=tts_engine_list_keys+tts_engine_list_values, help=f'''Preferred TTS engine (available are: {tts_engine_list_keys+tts_engine_list_values}.
+    headless_optional_group.add_argument(cli_options[13], type=str, default=default_tts_engine, choices=tts_engine_list_keys+tts_engine_list_values, help=f'''Preferred TTS engine (available are: {tts_engine_list_keys+tts_engine_list_values}.
 Default depends on the selected language. The tts engine should be compatible with the chosen language''')
     headless_optional_group.add_argument(cli_options[14], type=str, default=None, help='Path to the custom model zip file cntaining mandatory model files. Please refer to ./lib/models.py')
     headless_optional_group.add_argument(cli_options[15], type=str, default=default_fine_tuned, help='Fine tuned model path. Default is builtin model.')
@@ -227,7 +227,7 @@ Default to config.json model.""")
     headless_optional_group.add_argument(cli_options[29], type=str, default='', help='Audiobookshelf server URL (e.g. http://localhost:13378).')
     headless_optional_group.add_argument(cli_options[30], type=str, default='', help='Audiobookshelf API token.')
     headless_optional_group.add_argument(cli_options[31], type=str, default='', help='Audiobookshelf library ID.')
-    headless_optional_group.add_argument(cli_options[32], action='version', version=f'ebook2audiobook version {prog_version}', help='Show the version of the script and exit')
+    headless_optional_group.add_argument(cli_options[32], action='version', version=f'BukuSuara Studio {prog_version}', help='Show the version of the script and exit')
     internal_group = parser.add_argument_group(argparse.SUPPRESS)
     internal_group.add_argument(cli_options[33], type=str, default=None, help=argparse.SUPPRESS)
     internal_group.add_argument(cli_options[34], type=str, default=None, help=argparse.SUPPRESS)

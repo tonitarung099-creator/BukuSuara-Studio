@@ -3123,8 +3123,18 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
         try:
             if session['cancellation_requested']:
                 return False
+            ffprobe = shutil.which('ffprobe')
+            ffmpeg = shutil.which('ffmpeg')
+            if not ffprobe or not ffmpeg:
+                missing = ', '.join(
+                    name for name, path in (('ffprobe', ffprobe), ('ffmpeg', ffmpeg))
+                    if not path
+                )
+                error = f'Missing required audio tool(s): {missing}'
+                print(error)
+                return False
             ffprobe_cmd = [
-                shutil.which('ffprobe'), '-v', 'error', '-threads', '0', '-select_streams', 'a:0',
+                ffprobe, '-v', 'error', '-threads', '0', '-select_streams', 'a:0',
                 '-show_entries', 'stream=codec_name,sample_rate,sample_fmt',
                 '-of', 'default=nokey=1:noprint_wrappers=1', combined_audio
             ]
@@ -3136,7 +3146,7 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
             codec_info = probe.stdout.strip().splitlines()
             input_codec = codec_info[0] if len(codec_info) > 0 else None
             input_rate = codec_info[1] if len(codec_info) > 1 else None
-            cmd = [shutil.which('ffmpeg'), '-hide_banner', '-nostats', '-hwaccel', 'auto', '-thread_queue_size', '1024', '-i', combined_audio]
+            cmd = [ffmpeg, '-hide_banner', '-nostats', '-hwaccel', 'auto', '-thread_queue_size', '1024', '-i', combined_audio]
             target_codec, target_rate = None, None
             if session['output_format'] == 'wav':
                 target_codec = 'pcm_s16le'
@@ -3175,7 +3185,7 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
                 cmd += ['-ac', '1']
             if input_codec == target_codec and input_rate == target_rate:
                 cmd = [
-                    shutil.which('ffmpeg'), '-hide_banner', '-nostats', '-hwaccel', 'auto', '-thread_queue_size', '1024', '-i', combined_audio,
+                    ffmpeg, '-hide_banner', '-nostats', '-hwaccel', 'auto', '-thread_queue_size', '1024', '-i', combined_audio,
                     '-threads', '0', '-f', 'ffmetadata', '-i', metadata_file,
                     '-map', '0:a', '-map_metadata', '1', '-c', 'copy',
                     '-progress', 'pipe:2',

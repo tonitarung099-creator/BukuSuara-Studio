@@ -77,6 +77,8 @@ def main() -> int:
         errors.append("Headless Directory Mode masih case-sensitive untuk ekstensi ebook")
     if "The provided --custom_model" not in app_source:
         errors.append("Headless custom model belum divalidasi sebelum konversi")
+    if "standalone/static FFmpeg" not in app_source or "if ffmpeg and ffprobe:" not in app_source:
+        errors.append("Startup Windows masih menolak FFmpeg standalone/static")
 
     requirements = Path("requirements.txt").read_text(encoding="utf-8")
     if "./ext/py/demucs" in requirements:

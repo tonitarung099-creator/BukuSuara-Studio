@@ -30,7 +30,6 @@ from multiprocessing.managers import DictProxy, ListProxy, SyncManager
 from stanza.pipeline.core import Pipeline, DownloadMethod
 from num2words2 import num2words
 from pathlib import Path
-from PIL import Image
 from pydub import AudioSegment
 from pydub.utils import mediainfo
 from queue import Queue, Empty

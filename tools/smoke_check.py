@@ -187,6 +187,14 @@ def main() -> int:
     if "self.process.wait(timeout=2)" not in subprocess_source:
         errors.append("SubprocessPipe terminate belum punya fallback kill")
 
+    launcher_source = Path("ebook2audiobook.cmd").read_text(encoding="utf-8", errors="ignore").replace("\r\n", "\n")
+    if 'where.exe /Q python >nul 2>&1' not in launcher_source:
+        errors.append("Launcher Windows masih memanggil Python sebelum bootstrap")
+    if ':check_scoop_buckets\nsetlocal EnableDelayedExpansion' not in launcher_source:
+        errors.append("Pemeriksaan Scoop bucket belum mengaktifkan delayed expansion")
+    if ':check_programs\nsetlocal EnableDelayedExpansion\nset "missing_prog_array="' not in launcher_source:
+        errors.append("Pemeriksaan dependency Windows belum mereset daftar paket yang hilang")
+
     requirements = Path("requirements.txt").read_text(encoding="utf-8")
     if "./ext/py/demucs" in requirements:
         errors.append("requirements.txt masih memakai dependency Demucs lokal yang tidak portable")

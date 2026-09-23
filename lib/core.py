@@ -3071,17 +3071,30 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
             is_mp3 = out_fmt == 'mp3'
             def tag(key):
                 return key.upper() if is_vorbis else key
+
+            def ffmeta_escape(value:Any)->str:
+                text = str(value).replace('\r\n', '\n').replace('\r', '\n')
+                text = (
+                    text
+                    .replace('\\', '\\\\')
+                    .replace('=', '\\=')
+                    .replace(';', '\\;')
+                    .replace('#', '\\#')
+                )
+                # FFMETADATA uses a backslash before a physical newline to keep it in one value.
+                return text.replace('\n', '\\\n')
+
             ffmpeg_metadata = ';FFMETADATA1\n'
             if session['metadata'].get('title'):
-                ffmpeg_metadata += f"{tag('title')}={session['metadata']['title']}\n"
+                ffmpeg_metadata += f"{tag('title')}={ffmeta_escape(session['metadata']['title'])}\n"
             if session['metadata'].get('creator'):
-                ffmpeg_metadata += f"{tag('artist')}={session['metadata']['creator']}\n"
+                ffmpeg_metadata += f"{tag('artist')}={ffmeta_escape(session['metadata']['creator'])}\n"
             if session['metadata'].get('language'):
-                ffmpeg_metadata += f"{tag('language')}={session['metadata']['language']}\n"
+                ffmpeg_metadata += f"{tag('language')}={ffmeta_escape(session['metadata']['language'])}\n"
             if session['metadata'].get('description'):
-                ffmpeg_metadata += f"{tag('description')}={session['metadata']['description']}\n"
+                ffmpeg_metadata += f"{tag('description')}={ffmeta_escape(session['metadata']['description'])}\n"
             if session['metadata'].get('publisher') and (is_mp4_like or is_mp3):
-                ffmpeg_metadata += f"{tag('publisher')}={session['metadata']['publisher']}\n"
+                ffmpeg_metadata += f"{tag('publisher')}={ffmeta_escape(session['metadata']['publisher'])}\n"
             if session['metadata'].get('published'):
                 try:
                     if '.' in session['metadata']['published']:
@@ -3100,10 +3113,10 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
                 if is_mp3 or is_mp4_like:
                     isbn = session['metadata']['identifiers'].get('isbn')
                     if isbn:
-                        ffmpeg_metadata += f"{tag('isbn')}={isbn}\n"
+                        ffmpeg_metadata += f"{tag('isbn')}={ffmeta_escape(isbn)}\n"
                     asin = session['metadata']['identifiers'].get('mobi-asin')
                     if asin:
-                        ffmpeg_metadata += f"{tag('asin')}={asin}\n"
+                        ffmpeg_metadata += f"{tag('asin')}={ffmeta_escape(asin)}\n"
             start_time = 0
             total = len(part_chapters)
             progress_desc = f'Metadata Part {part_num}' if part_num is not None else 'Metadata'
@@ -3115,7 +3128,7 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
                     return False
                 filepath = os.path.join(session['chapters_dir'], filename)
                 duration_ms = len(AudioSegment.from_file(filepath, format=default_audio_proc_format))
-                clean_title = re.sub(r'(^#)|[=\\]|(-$)', lambda m: '\\' + (m.group(1) or m.group(0)), sanitize_meta_chapter_title(chapter_title))
+                clean_title = ffmeta_escape(sanitize_meta_chapter_title(chapter_title))
                 ffmpeg_metadata += '[CHAPTER]\nTIMEBASE=1/1000\n'
                 ffmpeg_metadata += f'START={start_time}\nEND={start_time + duration_ms}\n'
                 ffmpeg_metadata += f"{tag('title')}={clean_title}\n"

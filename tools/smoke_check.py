@@ -39,6 +39,8 @@ def main() -> int:
         errors.append("Batch pronunciation Gemini belum dibatasi")
     if '"reviewed": sorted(self.reviewed)' not in pronunciation_source:
         errors.append("Cache keputusan pronunciation belum menyimpan istilah yang sudah diperiksa")
+    if '"reviewed_context": dict(sorted(self.reviewed_context.items()))' not in pronunciation_source:
+        errors.append("Cache pronunciation belum melacak perubahan konteks istilah")
     if "MAX_API_KEYS = 100" not in gemini_source:
         errors.append("Gemini agent belum membatasi maksimal 100 API key")
     if "time.time() + 300" not in gemini_source:

@@ -435,15 +435,10 @@ goto :restart_script
 :install_scoop
 echo Installing Scoop…
 call "%PS_EXE%" %PS_ARGS% -Command "irm get.scoop.sh -OutFile '%TEMP%\install_scoop.ps1'"
-call "%PS_EXE%" %PS_ARGS% -File "%TEMP%\install_scoop.ps1" -RunAsAdmin
+call "%PS_EXE%" %PS_ARGS% -File "%TEMP%\install_scoop.ps1"
+set "SCOOP_INSTALL_RC=%ERRORLEVEL%"
 del "%TEMP%\install_scoop.ps1" >nul 2>&1
-if errorlevel 1 (
-    net session >nul 2>&1
-    if not errorlevel 1 (
-        goto :restart_script
-    )
-    goto :failed
-)
+if not "%SCOOP_INSTALL_RC%"=="0" goto :failed
 findstr /i /x "scoop" "%INSTALLED_LOG%" >nul 2>&1
 if errorlevel 1 echo scoop>>"%INSTALLED_LOG%"
 call "%PS_EXE%" %PS_ARGS% -Command "scoop bucket add muggle https://github.com/hu3rror/scoop-muggle.git"
@@ -617,7 +612,6 @@ for %%p in (%missing_prog_array%) do (
 	)
 )
 endlocal & set "PATH=%PATH%"
-call "%PS_EXE%" %PS_ARGS% -Command "$cp=[System.Environment]::GetEnvironmentVariable('Path','User'); $np=$cp; @('%SCOOP_SHIMS%','%SCOOP_APPS%','%CONDA_PATH%','%NODE_PATH%') | Where-Object {$_ -and $cp -notlike ('*'+$_+'*')} | ForEach-Object {$np+=(';'+$_)}; [System.Environment]::SetEnvironmentVariable('Path',$np,'User')"
 set "missing_prog_array="
 goto :main
 
@@ -1090,11 +1084,6 @@ if not errorlevel 1 (
 )
 start "%APP_NAME%" cmd /k "cd /d "%SAFE_SCRIPT_DIR%" & call %APP_FILE% %ARGS%"
 exit 0
-
-:restart_script_admin
-echo Restarting script as Administrator…
-call "%PS_EXE%" -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "Start-Process -FilePath '%SAFE_SCRIPT_DIR%\%APP_FILE%' -ArgumentList '%ARGS%' -Verb RunAs"
-exit
 
 endlocal
 pause

@@ -3231,7 +3231,13 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
             elif session['output_format'] == 'aac':
                 target_codec = 'aac'
                 target_rate = '44100'
-                cmd += ['-c:a', 'aac', '-b:a', '192k', '-ar', target_rate, '-movflags', '+faststart']
+                cmd += [
+                    '-f', 'ffmetadata', '-i', metadata_file,
+                    '-map', '0:a',
+                    '-c:a', 'aac', '-b:a', '192k', '-ar', target_rate,
+                    '-map_metadata', '1',
+                    '-write_id3v2', '1',
+                ]
             elif session['output_format'] == 'flac':
                 target_codec = 'flac'
                 target_rate = '44100'

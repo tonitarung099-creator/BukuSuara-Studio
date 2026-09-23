@@ -19,6 +19,7 @@ from lib.classes.gemini_agent import (
 )
 
 CACHE_FILENAME = "gemini_pronunciation_map.json"
+PRONUNCIATION_VERSION = 1
 MAX_TERMS_PER_REQUEST = 60
 MAX_CONTEXT_CHARS = 180
 
@@ -75,7 +76,7 @@ class GeminiPronunciationProcessor:
         Path(self.process_dir).mkdir(parents=True, exist_ok=True)
         tmp = self.cache_path + ".tmp"
         payload = {
-            "version": 1,
+            "version": PRONUNCIATION_VERSION,
             "aliases": dict(sorted(self.cache.items())),
             "reviewed": sorted(self.reviewed),
         }
@@ -223,4 +224,7 @@ class GeminiPronunciationProcessor:
 
     def process_blocks(self, blocks: list[str], progress_callback=None) -> tuple[list[str], dict[str, str]]:
         self.build_dictionary(blocks, progress_callback=progress_callback)
+        # Also write an empty completed cache when no foreign candidates were found.
+        # This acts as a migration/completion marker for future resumes.
+        self._save_cache()
         return self.apply_dictionary(blocks), dict(self.cache)

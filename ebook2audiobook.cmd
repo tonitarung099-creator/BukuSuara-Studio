@@ -59,7 +59,9 @@ set "PYTHON_ENV=python_env"
 set "PYTHONUTF8=1"
 set "PYTHONIOENCODING=utf-8"
 set "CURRENT_ENV="
-set "HOST_PROGRAMS=cmake rustup calibre ffmpeg mediainfo nodejs espeak-ng sox tesseract"
+set "RUNTIME_PROGRAMS=calibre ffmpeg mediainfo espeak-ng sox tesseract"
+set "BOOTSTRAP_PROGRAMS=cmake rustup nodejs"
+set "HOST_PROGRAMS=%RUNTIME_PROGRAMS% %BOOTSTRAP_PROGRAMS%"
 :: tesseract-ocr-[lang] and calibre are hardcoded in Dockerfile
 set "DOCKER_PROGRAMS=curl ffmpeg mediainfo nodejs espeak-ng sox tesseract-ocr"
 set "DOCKER_CALIBRE_INSTALLER_URL=https://download.calibre-ebook.com/linux-installer.sh"
@@ -359,7 +361,13 @@ endlocal & exit /b 0
 :check_programs
 setlocal EnableDelayedExpansion
 set "missing_prog_array="
-for %%p in (%HOST_PROGRAMS%) do (
+set "program_list=%HOST_PROGRAMS%"
+set "PROVISIONED_VERSION="
+if exist "%SAFE_SCRIPT_DIR%\%PYTHON_ENV%\.provisioned" (
+    set /p PROVISIONED_VERSION=<"%SAFE_SCRIPT_DIR%\%PYTHON_ENV%\.provisioned"
+    if "!PROVISIONED_VERSION!"=="%APP_VERSION%" set "program_list=%RUNTIME_PROGRAMS%"
+)
+for %%p in (!program_list!) do (
     set "prog=%%p"
     set "_found=0"
     if "%%p"=="nodejs"  set "prog=node"
@@ -648,16 +656,22 @@ if defined CURRENT_ENV (
 if /i "%CONDA_DEFAULT_ENV%"=="base" (
 	call conda deactivate >nul 2>&1
 )
-if not exist "%SAFE_SCRIPT_DIR%\%PYTHON_ENV%\.provisioned" (
-	if exist "%SAFE_SCRIPT_DIR%\%PYTHON_ENV%" (
-		echo Detected incomplete %PYTHON_ENV% — removing and recreating...
-		rmdir /s /q "%SAFE_SCRIPT_DIR%\%PYTHON_ENV%"
-	)
+set "PROVISIONED_VERSION="
+if exist "%SAFE_SCRIPT_DIR%\%PYTHON_ENV%\.provisioned" (
+	set /p PROVISIONED_VERSION=<"%SAFE_SCRIPT_DIR%\%PYTHON_ENV%\.provisioned"
+)
+if not exist "%SAFE_SCRIPT_DIR%\%PYTHON_ENV%" (
 	echo Creating ./%PYTHON_ENV% with python %PYTHON_VERSION%...
 	call "%CONDA_HOME%\Scripts\activate.bat"
 	call conda create --prefix "%SAFE_SCRIPT_DIR%\%PYTHON_ENV%" -c conda-forge python=%PYTHON_VERSION% pip -y
 	if errorlevel 1 exit /b 3
+	set "PROVISIONED_VERSION="
+)
+if not "%PROVISIONED_VERSION%"=="%APP_VERSION%" (
+	echo Provisioning %PYTHON_ENV% for BukuSuara version %APP_VERSION%...
+	call "%CONDA_HOME%\Scripts\activate.bat"
 	call conda activate "%SAFE_SCRIPT_DIR%\%PYTHON_ENV%"
+	if errorlevel 1 exit /b 3
 	call :provision_env
 	if errorlevel 1 exit /b 3
 	> "%SAFE_SCRIPT_DIR%\%PYTHON_ENV%\.provisioned" echo %APP_VERSION%

@@ -395,33 +395,6 @@ endlocal & set "missing_prog_array=%missing_prog_array%"
 if not "%missing_prog_array%"=="" exit /b 1
 exit /b 0
 
-:check_ffmpeg_shared
-setlocal
-set "ffmpeg_pkg=none"
-set "tmp_file=%INSTALLED_LOG%.tmp"
-if exist "%SCOOP_HOME%\apps\ffmpeg-shared\current\bin\avcodec-*.dll" (
-    set "ffmpeg_pkg=shared"
-) else if exist "%SCOOP_HOME%\apps\ffmpeg\current\bin\ffmpeg.exe" (
-    set "ffmpeg_pkg=static"
-) else (
-	exit /b 0
-)
-if "%ffmpeg_pkg%"=="static" (
-	echo Static ffmpeg detected, swapping to ffmpeg-shared…
-	call scoop uninstall ffmpeg || (echo [xx] uninstall failed & exit /b 1)
-	call scoop install ffmpeg-shared || (echo [xx] install failed & exit /b 1)
- 	if exist "%INSTALLED_LOG%" (
- 		findstr /v /x /c:"ffmpeg" "%INSTALLED_LOG%" > "%tmp_file%" 2>nul
- 	) else (
- 		type nul > "%tmp_file%"
- 	)
-	>>"%tmp_file%" echo ffmpeg-shared
-	move /y "%tmp_file%" "%INSTALLED_LOG%" >nul
-	echo swap complete, .installed updated.
-)
-endlocal
-exit /b 0
-
 :install_python
 echo Installing Python %PYTHON_VERSION%…
 set "PYTHON_INSTALLER=python-%PYTHON_VERSION%-%PYTHON_ARCH%.exe"
@@ -440,8 +413,6 @@ if errorlevel 1 (
     goto :failed
 )
 del "%TEMP%\%PYTHON_INSTALLER%"
-del "%USERPROFILE%\AppData\Local\Microsoft\WindowsApps\python.exe"
-del "%USERPROFILE%\AppData\Local\Microsoft\WindowsApps\python3.exe"
 echo %ESC%[33m=============== Python OK ===============%ESC%[0m
 goto :restart_script
 

@@ -3199,17 +3199,24 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
                 return False
             ffprobe_cmd = [
                 ffprobe, '-v', 'error', '-threads', '0', '-select_streams', 'a:0',
-                '-show_entries', 'stream=codec_name,sample_rate,sample_fmt',
-                '-of', 'default=nokey=1:noprint_wrappers=1', combined_audio
+                '-show_entries', 'stream=codec_name,sample_rate,channels',
+                '-of', 'json', combined_audio
             ]
             probe = subprocess.run(ffprobe_cmd, capture_output=True, text=True)
             if probe.returncode != 0:
                 error = f'ffprobe failed for {combined_audio}: {probe.stderr.strip()}'
                 print(error)
                 return False
-            codec_info = probe.stdout.strip().splitlines()
-            input_codec = codec_info[0] if len(codec_info) > 0 else None
-            input_rate = codec_info[1] if len(codec_info) > 1 else None
+            try:
+                probe_data = json.loads(probe.stdout or '{}')
+                stream_info = (probe_data.get('streams') or [{}])[0]
+                input_codec = stream_info.get('codec_name')
+                input_rate = str(stream_info.get('sample_rate')) if stream_info.get('sample_rate') is not None else None
+                input_channels = int(stream_info.get('channels')) if stream_info.get('channels') is not None else None
+            except (ValueError, TypeError, IndexError) as e:
+                error = f'Could not parse ffprobe audio stream data: {e}'
+                print(error)
+                return False
             cmd = [ffmpeg, '-hide_banner', '-nostats', '-hwaccel', 'auto', '-thread_queue_size', '1024', '-i', combined_audio]
             target_codec, target_rate = None, None
             if session['output_format'] == 'wav':
@@ -3243,11 +3250,13 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
                     target_rate = '48000'
                     cmd += ['-c:a', 'libopus', '-compression_level', '0', '-b:a', '192k', '-ar', target_rate]
                 cmd += ['-map_metadata', '1']
-            if session['output_channel'] == 'stereo':
-                cmd += ['-ac', '2']
-            else:
-                cmd += ['-ac', '1']
-            if input_codec == target_codec and input_rate == target_rate:
+            target_channels = 2 if session['output_channel'] == 'stereo' else 1
+            cmd += ['-ac', str(target_channels)]
+            if (
+                input_codec == target_codec
+                and input_rate == target_rate
+                and input_channels == target_channels
+            ):
                 cmd = [
                     ffmpeg, '-hide_banner', '-nostats', '-hwaccel', 'auto', '-thread_queue_size', '1024', '-i', combined_audio,
                     '-threads', '0', '-f', 'ffmetadata', '-i', metadata_file,
@@ -3937,8 +3946,14 @@ def convert_ebook(args:dict)->tuple:
             session['xtts_enable_text_splitting'] = bool(args['xtts_enable_text_splitting'])
             session['bark_text_temp'] =  float(args['bark_text_temp'])
             session['bark_waveform_temp'] =  float(args['bark_waveform_temp'])
-            session['output_format'] = str(args['output_format'])
-            session['output_channel'] = str(args['output_channel'])
+            output_format = str(args.get('output_format') or '').lower().lstrip('.')
+            output_channel = str(args.get('output_channel') or '').lower()
+            if output_format not in output_formats:
+                return f"Unsupported output format: {output_format}", False
+            if output_channel not in ('mono', 'stereo'):
+                return f"Unsupported output channel: {output_channel}", False
+            session['output_format'] = output_format
+            session['output_channel'] = output_channel
             session['output_split'] = bool(args['output_split'])
             session['output_split_hours'] = args['output_split_hours']if args['output_split_hours'] is not None else default_output_split_hours
             session['model_cache'] = f"{session['tts_engine']}-{session['fine_tuned']}"

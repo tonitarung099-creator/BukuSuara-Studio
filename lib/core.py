@@ -4278,7 +4278,7 @@ def finalize_audiobook(session_id:str)->tuple:
                     msg = 'Frontend disconnected!'
                     return result(msg, False)
                 msg = 'Conversion cancelled'
-                return result(msg, False)
+                return _fail(msg)
             if not block['keep'] or not block['text'].strip():
                 block['sentences'] = []
                 continue
@@ -4288,7 +4288,7 @@ def finalize_audiobook(session_id:str)->tuple:
             sentences_list = get_sentences(session_id, block['text'])
             if sentences_list is None:
                 error = 'No sentences found!'
-                return result(error, False)
+                return _fail(error)
             block['sentences'] = sentences_list
         blocks_current['blocks'] = blocks
         session['blocks_current'] = blocks_current

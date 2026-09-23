@@ -1,5 +1,8 @@
 import os, tempfile, sys, re
 
+_lib_dir = os.path.dirname(os.path.abspath(__file__))
+_project_dir = os.path.dirname(_lib_dir)
+
 debug_mode = False
 
 DEVICE_SYSTEM = sys.platform
@@ -39,7 +42,7 @@ fernet_data = b'gAAAAABptJuHZS_rMQRTmqzy-i5UFTh6HqcbklSV6oZsRpZXa7uSEveAMv1daIFz
 # ---------------------------------------------------------------------
 # Version and runtime config
 # ---------------------------------------------------------------------
-prog_version = (lambda: open('VERSION.txt').read().strip())()
+prog_version = (lambda: open(os.path.join(_project_dir, 'VERSION.txt'), encoding='utf-8').read().strip())()
 
 NATIVE = 'native'
 FULL_DOCKER = 'full_docker'
@@ -50,8 +53,8 @@ BUILD_DOCKER = 'build_docker'
 # ---------------------------------------------------------------------
 min_python_version = (3,10)
 max_python_version = (3,12)
-python_env_dir = os.path.abspath(os.path.join('.','python_env'))
-requirements_file = os.path.abspath(os.path.join('.','requirements.txt'))
+python_env_dir = os.path.join(_project_dir, 'python_env')
+requirements_file = os.path.join(_project_dir, 'requirements.txt')
 
 # ---------------------------------------------------------------------
 # Hardware mappings
@@ -65,7 +68,7 @@ devices = {
     "JETSON": {"proc": "jetson", "found": False},
 }
 
-device_info_json = '.device_info.json'
+device_info_json = os.path.join(_project_dir, '.device_info.json')
 device_info_dict = {"gpu_count": 0, "gpu_backend": None}
 
 default_device = devices['CPU']['proc']
@@ -124,16 +127,16 @@ jetson_version_range = {"min": (5,1), "max": (6,1)}
 # ---------------------------------------------------------------------
 # Global paths
 # ---------------------------------------------------------------------
-root_dir = os.path.dirname(os.path.abspath(__file__))
-tmp_dir = os.path.abspath('tmp')
-run_dir = os.path.abspath('run')
+root_dir = _lib_dir
+tmp_dir = os.path.join(_project_dir, 'tmp')
+run_dir = os.path.join(_project_dir, 'run')
 gradio_cache_dir = os.path.normpath(os.path.join(run_dir, 'gradio'))
-models_dir = os.path.abspath('models')
-ebooks_dir = os.path.abspath('ebooks')
-voices_dir = os.path.abspath('voices')
+models_dir = os.path.join(_project_dir, 'models')
+ebooks_dir = os.path.join(_project_dir, 'ebooks')
+voices_dir = os.path.join(_project_dir, 'voices')
 voices_url = 'https://huggingface.co/datasets/ebook2audiobook/E2A-Voices/resolve/main/voices.zip?download=true'
 tts_dir = os.path.join(models_dir, 'tts')
-components_dir = os.path.abspath('components')
+components_dir = os.path.join(_project_dir, 'components')
 
 # Portable runtime directories must exist before tempfile/cache consumers run.
 # Do not rely on empty directories surviving ZIP extraction or cleanup tools.
@@ -145,6 +148,9 @@ for runtime_dir in (
     ebooks_dir,
     voices_dir,
     tts_dir,
+    audiobooks_gradio_dir if 'audiobooks_gradio_dir' in globals() else os.path.join(_project_dir, 'audiobooks', 'gui', 'gradio'),
+    audiobooks_host_dir if 'audiobooks_host_dir' in globals() else os.path.join(_project_dir, 'audiobooks', 'gui', 'host'),
+    audiobooks_cli_dir if 'audiobooks_cli_dir' in globals() else os.path.join(_project_dir, 'audiobooks', 'cli'),
 ):
     os.makedirs(runtime_dir, exist_ok=True)
 
@@ -236,9 +242,11 @@ interface_component_options = {
 # ---------------------------------------------------------------------
 # UI directories
 # ---------------------------------------------------------------------
-audiobooks_gradio_dir = os.path.abspath(os.path.join('audiobooks','gui','gradio'))
-audiobooks_host_dir = os.path.abspath(os.path.join('audiobooks','gui','host'))
-audiobooks_cli_dir = os.path.abspath(os.path.join('audiobooks','cli'))
+audiobooks_gradio_dir = os.path.join(_project_dir, 'audiobooks', 'gui', 'gradio')
+audiobooks_host_dir = os.path.join(_project_dir, 'audiobooks', 'gui', 'host')
+audiobooks_cli_dir = os.path.join(_project_dir, 'audiobooks', 'cli')
+for audiobook_dir in (audiobooks_gradio_dir, audiobooks_host_dir, audiobooks_cli_dir):
+    os.makedirs(audiobook_dir, exist_ok=True)
 
 # ---------------------------------------------------------------------
 # files and audio supported formats

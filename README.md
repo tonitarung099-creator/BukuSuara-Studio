@@ -47,13 +47,15 @@ Fitur awal agent:
 - mengaktifkan/nonaktifkan pratinjau bab;
 - mengubah kecepatan XTTS;
 - menampilkan model, key aktif, dan penggunaan token bila metadata tersedia;
-- mendukung beberapa API key dan pindah key pada error kuota/server yang dapat dicoba ulang.
+- mendukung hingga **100 API key Gemini**;
+- otomatis pindah ke key berikutnya pada 429/quota, 503/overload, atau key yang tidak valid;
+- key yang baru terkena limit diberi cooldown sementara agar tidak langsung dipakai ulang.
 
 Default model: `gemini-3.5-flash-lite`.
 
 ### API key
 
-Masukkan API key langsung pada tab Agen Gemini. Beberapa key dapat dipisahkan dengan koma, titik koma, atau baris baru. Key tidak dimasukkan ke session audiobook dan tidak disimpan ke repository.
+Masukkan API key langsung pada tab Agen Gemini. Maksimal **100 key unik**; key ke-101 dan seterusnya diabaikan. Key dapat dipisahkan dengan koma, titik koma, atau baris baru. UI menampilkan jumlah key yang terdeteksi dan key aktif saat request berjalan. Key tidak dimasukkan ke session audiobook dan tidak disimpan ke repository.
 
 Alternatif untuk pemakaian lokal adalah environment variable:
 

@@ -1,4 +1,9 @@
 from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from lib.conf_lang import default_language_code
 from lib.conf_models import default_tts_engine, default_engine_settings

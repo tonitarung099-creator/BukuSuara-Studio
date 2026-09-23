@@ -3204,6 +3204,16 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
             return False
 
     def _export_audio(combined_audio:str, metadata_file:str, final_file:str, block_indices:set=None, part_num:int=None)->bool:
+        final_path = Path(final_file)
+        temp_audio = str(final_path.with_name(f'.{final_path.stem}.part{final_path.suffix}'))
+        final_vtt = os.path.join(session['audiobooks_dir'], f'{final_path.stem}.vtt')
+        temp_vtt = final_vtt + '.part'
+        for stale in (temp_audio, temp_vtt):
+            try:
+                if os.path.exists(stale):
+                    os.remove(stale)
+            except OSError:
+                pass
         try:
             if session['cancellation_requested']:
                 return False
@@ -3298,7 +3308,7 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
                     '-threads', '0', '-f', 'ffmetadata', '-i', metadata_file,
                     '-map', '0:a', '-map_metadata', '1', '-c', 'copy',
                     '-progress', 'pipe:2',
-                    '-y', final_file
+                    '-y', temp_audio
                 ]
             else:
                 cmd += [
@@ -3307,7 +3317,7 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
                     '-af', 'dynaudnorm=f=150:g=15,afftdn=nf=-70',
                     '-threads', '0',
                     '-progress', 'pipe:2',
-                    '-y', final_file
+                    '-y', temp_audio
                 ]
             progress_desc = f'Export Part {part_num}' if part_num is not None else 'Export'
             proc_pipe = SubprocessPipe(
@@ -3322,7 +3332,7 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
                 error = f'ffmpeg export failed for {final_file}'
                 print(error)
                 return False
-            if not (os.path.exists(final_file) and os.path.getsize(final_file) > 0):
+            if not (os.path.exists(temp_audio) and os.path.getsize(temp_audio) > 0):
                 error = f'{Path(final_file).name} is corrupted or does not exist'
                 print(error)
                 return False
@@ -3349,7 +3359,7 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
                     if session['output_format'] == 'mp3':
                         from mutagen.mp3 import MP3
                         from mutagen.id3 import ID3, APIC, error as id3_error
-                        audio = MP3(final_file, ID3=ID3)
+                        audio = MP3(temp_audio, ID3=ID3)
                         try:
                             audio.add_tags()
                         except id3_error:
@@ -3359,7 +3369,7 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
                     elif session['output_format'] in ['mp4', 'm4a', 'm4b', 'mov']:
                         from mutagen.mp4 import MP4, MP4Cover
                         img_fmt = MP4Cover.FORMAT_PNG if mime == 'image/png' else MP4Cover.FORMAT_JPEG
-                        audio = MP4(final_file)
+                        audio = MP4(temp_audio)
                         audio['covr'] = [MP4Cover(cover_data, imageformat=img_fmt)]
                     elif session['output_format'] in ['flac', 'ogg']:
                         from mutagen.flac import Picture
@@ -3371,17 +3381,17 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
                         pic.data = cover_data
                         if session['output_format'] == 'flac':
                             from mutagen.flac import FLAC
-                            audio = FLAC(final_file)
+                            audio = FLAC(temp_audio)
                             audio.clear_pictures()
                             audio.add_picture(pic)
                         else:
                             from mutagen.oggopus import OggOpus
-                            audio = OggOpus(final_file)
+                            audio = OggOpus(temp_audio)
                             audio['metadata_block_picture'] = [base64.b64encode(pic.write()).decode('ascii')]
                     elif session['output_format'] == 'wav':
                         from mutagen.wave import WAVE
                         from mutagen.id3 import APIC
-                        audio = WAVE(final_file)
+                        audio = WAVE(temp_audio)
                         if audio.tags is None:
                             audio.add_tags()
                         audio.tags.delall('APIC')
@@ -3389,25 +3399,33 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
                     elif session['output_format'] == 'aac':
                         from mutagen.id3 import ID3, APIC, ID3v1SaveOptions, ID3NoHeaderError
                         try:
-                            tags = ID3(final_file)
+                            tags = ID3(temp_audio)
                         except ID3NoHeaderError:
                             tags = ID3()
                         tags.delall('APIC')
                         tags.add(APIC(encoding=3, mime=mime, type=3, desc='Cover', data=cover_data))
-                        tags.save(final_file, v1=ID3v1SaveOptions.REMOVE, v2_version=3)
+                        tags.save(temp_audio, v1=ID3v1SaveOptions.REMOVE, v2_version=3)
                     if audio is not None:
                         audio.save()
-            final_vtt = os.path.join(session['audiobooks_dir'], f'{Path(final_file).stem}.vtt')
-            vtt_built, error = build_vtt_file(session, vtt_path=final_vtt, block_indices=block_indices)
+            vtt_built, error = build_vtt_file(session, vtt_path=temp_vtt, block_indices=block_indices)
             if not vtt_built:
                 error = f'build_vtt_file() error: {error}'
                 print(error)
                 return False
+            os.replace(temp_audio, final_file)
+            os.replace(temp_vtt, final_vtt)
             return True
         except Exception as e:
             error = f'Export failed: {e}'
             print(error)
             return False
+        finally:
+            for partial in (temp_audio, temp_vtt):
+                try:
+                    if os.path.exists(partial):
+                        os.remove(partial)
+                except OSError:
+                    pass
 
     try:
         session = context.get_session(session_id)

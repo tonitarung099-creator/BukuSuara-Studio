@@ -87,6 +87,10 @@ def main() -> int:
         errors.append("Headless source branch masih bisa lanjut setelah validasi gagal")
     if "standalone/static FFmpeg" not in app_source or "if ffmpeg and ffprobe:" not in app_source:
         errors.append("Startup Windows masih menolak FFmpeg standalone/static")
+    if "APP_ROOT = Path(__file__).resolve().parent" not in app_source:
+        errors.append("Asset GUI masih berisiko bergantung pada working directory")
+    if "favicon_path=str(APP_ROOT / 'favicon.ico')" not in app_source:
+        errors.append("Favicon GUI belum dipatok ke folder aplikasi")
 
     gradio_source = Path("lib/gradio.py").read_text(encoding="utf-8")
     if "Missing voice must not invalidate the selected ebook." not in gradio_source:

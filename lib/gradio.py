@@ -3079,7 +3079,10 @@ Chat agent tidak mengirim seluruh isi buku. Untuk **DOCX/TXT Bahasa Indonesia**,
                         session['cancellation_requested'] = False
                     if isinstance(session.get('ebook'), str):
                         if not os.path.exists(session['ebook']):
-                            session['ebook'] = session['ebook_src'] = None
+                            # The process copy may be cleaned while the original source still exists.
+                            session['ebook'] = None
+                            if isinstance(session.get('ebook_src'), str) and not os.path.exists(session['ebook_src']):
+                                session['ebook_src'] = None
                     if isinstance(session.get('voice'), str):
                         if not os.path.exists(session['voice']):
                             # Missing voice must not invalidate the selected ebook.

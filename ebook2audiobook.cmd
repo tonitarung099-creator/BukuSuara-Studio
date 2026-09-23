@@ -623,6 +623,24 @@ endlocal & set "PATH=%PATH%"
 set "missing_prog_array="
 goto :main
 
+:portable_env_ready
+if not exist "%SAFE_SCRIPT_DIR%\%PYTHON_ENV%\python.exe" exit /b 1
+if not exist "%SAFE_SCRIPT_DIR%\%PYTHON_ENV%\.provisioned" exit /b 1
+set "PORTABLE_ENV_VERSION="
+set /p PORTABLE_ENV_VERSION=<"%SAFE_SCRIPT_DIR%\%PYTHON_ENV%\.provisioned"
+if not "%PORTABLE_ENV_VERSION%"=="%APP_VERSION%" exit /b 1
+set "PATH=%SAFE_SCRIPT_DIR%\%PYTHON_ENV%;%SAFE_SCRIPT_DIR%\%PYTHON_ENV%\Scripts;%PATH%"
+call :check_programs
+if errorlevel 1 exit /b 1
+exit /b 0
+
+:run_portable_env
+call :check_sitecustomized
+if errorlevel 1 exit /b 1
+call :build_gui
+call "%SAFE_SCRIPT_DIR%\%PYTHON_ENV%\python.exe" -u "%SAFE_SCRIPT_DIR%\app.py" --script_mode %NATIVE% %ARGS%
+exit /b %ERRORLEVEL%
+
 :check_conda
 where.exe /Q conda
 if errorlevel 1 (
@@ -1053,6 +1071,11 @@ if defined arguments.help (
 			echo The Docker image is only available with a Linux container
         )
     ) else if "%SCRIPT_MODE%"=="%NATIVE%" (
+		call :portable_env_ready
+		if not errorlevel 1 (
+			call :run_portable_env
+			exit /b %ERRORLEVEL%
+		)
 		call :check_scoop
 		if errorlevel 1 goto :install_scoop
 		call :check_scoop_buckets

@@ -24,6 +24,7 @@ CACHE_FILENAME = "gemini_pronunciation_map.json"
 PRONUNCIATION_VERSION = 2
 MAX_TERMS_PER_REQUEST = 60
 MAX_CONTEXT_CHARS = 180
+PRONUNCIATION_MAX_OUTPUT_TOKENS = 4096
 
 _CAPITALIZED_PHRASE = re.compile(
     r"(?<!\w)(?:[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’.-]{1,})(?:\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’.-]{1,}){0,2}(?!\w)"
@@ -192,7 +193,7 @@ class GeminiPronunciationProcessor:
                     contents=prompt,
                     config=types.GenerateContentConfig(
                         temperature=0.1,
-                        max_output_tokens=1800,
+                        max_output_tokens=PRONUNCIATION_MAX_OUTPUT_TOKENS,
                         response_mime_type="application/json",
                     ),
                 )

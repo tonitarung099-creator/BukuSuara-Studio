@@ -2,7 +2,7 @@ import time
 import logging
 
 from queue import Queue, Empty
-from typing import Any
+from typing import Any, Generator
 
 
 class RedirectConsole:

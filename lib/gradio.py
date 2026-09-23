@@ -1728,8 +1728,9 @@ Chat agent tidak mengirim seluruh isi buku. Untuk **DOCX/TXT Bahasa Indonesia**,
                     exception_alert(session_id, error)
                 return gr.update(value=0.0), gr.update(value=None), gr.update(value=None)
 
-            def _update_gr_glassmask(str:str=gr_glassmask_msg, attr:list=['gr-glass-mask'])->dict:
-                return gr.update(value=str, elem_id='gr_glassmask', elem_classes=attr)
+            def _update_gr_glassmask(str:str=gr_glassmask_msg, attr:list|None=None)->dict:
+                classes = list(attr) if attr is not None else ['gr-glass-mask']
+                return gr.update(value=str, elem_id='gr_glassmask', elem_classes=classes)
 
             def _build_voice_highlight_css(row_index:int|None)->str:
                 """Emit a <style> block highlighting tr.file:nth-child(N+1) inside #gr_ebook_src, or '' to clear."""

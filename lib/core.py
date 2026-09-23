@@ -3864,8 +3864,14 @@ def disambiguate_directory_ebook_name(session:Any, ebook_name:str, ebook_src:str
     """Avoid cache/output collisions for different Directory Mode files with the same stem."""
     if session.get('ebook_mode') != ebook_modes['DIRECTORY']:
         return ebook_name
-    ebook_list = session.get('ebook_list')
-    if not isinstance(ebook_list, list) or len(ebook_list) < 2:
+    ebook_list_raw = session.get('ebook_list')
+    if ebook_list_raw is None or isinstance(ebook_list_raw, (str, bytes)):
+        return ebook_name
+    try:
+        ebook_list = list(ebook_list_raw)
+    except TypeError:
+        return ebook_name
+    if len(ebook_list) < 2:
         return ebook_name
 
     def normalized_stem(path:Any)->str:

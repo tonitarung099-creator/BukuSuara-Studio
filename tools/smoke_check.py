@@ -223,6 +223,12 @@ def main() -> int:
         errors.append("Launcher masih memiliki typo perintah 'ifi' pada jalur help")
     if 'supported range is %MIN_PYTHON_VERSION% through %MAX_PYTHON_VERSION%' not in launcher_source:
         errors.append("Launcher belum menolak Python di atas MAX_PYTHON_VERSION")
+    if "-RunAsAdmin" in launcher_source:
+        errors.append("Launcher fallback Scoop masih meminta RunAsAdmin")
+    if "SetEnvironmentVariable('Path',$np,'User')" in launcher_source:
+        errors.append("Launcher portable masih menulis PATH permanen ke user profile")
+    if ":restart_script_admin" in launcher_source:
+        errors.append("Launcher portable masih menyimpan jalur restart admin yang tidak dipakai")
 
     requirements = Path("requirements.txt").read_text(encoding="utf-8")
     if "./ext/py/demucs" in requirements:

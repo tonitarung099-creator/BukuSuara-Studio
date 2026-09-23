@@ -43,6 +43,10 @@ def main() -> None:
             "Microsoft Edge": "Mai-kro-soft Ej",
         }
         processor.reviewed = set(candidates)
+        processor.reviewed_context = {
+            term: processor._context_fingerprint(context)
+            for term, context in candidates.items()
+        }
         processed = processor.apply_dictionary(source)
         assert "Jorj pergi ke Grenij" in processed[0]
         assert "Yu-tub" in processed[0]
@@ -53,6 +57,12 @@ def main() -> None:
         restored = GeminiPronunciationProcessor("ci-test", tmp)
         assert restored.cache["George"] == "Jorj"
         assert "George" in restored.reviewed
+        assert restored.reviewed_context["George"] == processor.reviewed_context["George"]
+
+        changed_context = "George Washington berbicara di acara berbeda."
+        old_fingerprint = restored.reviewed_context["George"]
+        new_fingerprint = restored._context_fingerprint(restored._context(changed_context, "George"))
+        assert old_fingerprint != new_fingerprint, "context fingerprint must detect changed usage"
 
     print("Gemini pronunciation logic: OK")
 

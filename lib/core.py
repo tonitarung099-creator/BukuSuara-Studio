@@ -127,6 +127,11 @@ class SessionTracker:
     def end_session(self, session_id:str, socket_hash:str)->None:
         #self.blocks_autosave.unregister(session_id)
         active_sessions.discard(socket_hash)
+        try:
+            from lib.classes.gemini_agent import clear_session_gemini
+            clear_session_gemini(session_id)
+        except Exception:
+            pass
         with self.lock:
             context.sessions.pop(session_id, None)
 
@@ -3629,16 +3634,23 @@ def translate_blocks(session_id:str, raw_blocks:list)->tuple:
         error = f'translate_blocks() error: {e}'
         return raw_blocks, error
 
+def gemini_pronunciation_required(session:Any)->bool:
+    if not session:
+        return False
+    final_language = session.get('translate') if session.get('translate_enabled') and session.get('translate') else session.get('language')
+    source_ext = Path(session.get('ebook') or '').suffix.lower()
+    return final_language == 'ind' and (
+        source_ext in {'.docx', '.txt'} or session.get('ebook_mode') == ebook_modes['TEXT']
+    )
+
+
 def preprocess_gemini_pronunciation(session_id:str, raw_blocks:list)->tuple[list, str|None]:
     """Automatically rewrite foreign-name pronunciation for Indonesian DOCX/TXT before TTS."""
     try:
         session = context.get_session(session_id)
         if not session or not session.get('id', False):
             return raw_blocks, 'Session expired'
-        final_language = session.get('translate') if session.get('translate_enabled') and session.get('translate') else session.get('language')
-        source_ext = Path(session.get('ebook') or '').suffix.lower()
-        is_text_source = session.get('ebook_mode') == ebook_modes['TEXT']
-        if final_language != 'ind' or (source_ext not in {'.docx', '.txt'} and not is_text_source):
+        if not gemini_pronunciation_required(session):
             return raw_blocks, None
 
         processor = GeminiPronunciationProcessor(session_id, session['process_dir'])
@@ -4025,6 +4037,17 @@ def convert_ebook(args:dict)->tuple:
                                         blocks_current['blocks'] = blocks
                                         session['blocks_current'] = blocks_current
                                         save_db_blocks(session_id)
+                            if not missing_orig_json and gemini_pronunciation_required(session):
+                                pronunciation_cache = os.path.join(session['process_dir'], 'gemini_pronunciation_map.json')
+                                if not os.path.exists(pronunciation_cache):
+                                    # Existing process folders created before the pronunciation feature
+                                    # must be re-parsed once. Keep the old blocks as the realignment baseline
+                                    # so only changed pronunciation blocks are reconverted.
+                                    blocks_orig_old = copy.deepcopy(session.get('blocks_orig', {}))
+                                    missing_orig_json = True
+                                    msg = 'Migrasi pronunciation Gemini: cache lama belum ada, memproses ulang teks sebelum TTS.'
+                                    print(msg)
+                                    show_alert(session_id, {'type': 'info', 'msg': msg})
                             epubBook = epub.read_epub(session['epub_path'], {'ignore_ncx': True})
                             if epubBook:
                                 metadata = dict(session['metadata'])

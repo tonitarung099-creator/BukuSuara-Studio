@@ -3013,6 +3013,18 @@ def convert_chapters2audio(session_id:str)->bool:
         if not conversion:
             unload_tts_manager(tts_manager)
 
+def ffconcat_quote_path(path:Path|str)->str:
+    """Quote a filesystem path for FFmpeg concat demuxer syntax."""
+    value = Path(path).as_posix()
+    return "'" + value.replace("'", "'\\''") + "'"
+
+def ffconcat_unquote_path(value:str)->str:
+    """Reverse ffconcat_quote_path for local duration/existence checks."""
+    value = (value or '').strip()
+    if len(value) >= 2 and value[0] == "'" and value[-1] == "'":
+        value = value[1:-1]
+    return value.replace("'\\''", "'")
+
 def combine_audio_sentences(session_id:str, file:str, block_id:str, sentence_count:int)->bool:
     try:
         session = context.get_session(session_id)
@@ -3044,7 +3056,7 @@ def combine_audio_sentences(session_id:str, file:str, block_id:str, sentence_cou
             for path in selected_files:
                 if session['cancellation_requested']:
                     return False
-                f.write(f"file '{path.as_posix()}'\n")
+                f.write(f"file {ffconcat_quote_path(path)}\n")
         result = assemble_audio_chunks(concat_list, file, session['is_gui_process'])
         if not result:
             error = 'combine_audio_sentences() FFmpeg concat failed.'
@@ -3454,13 +3466,10 @@ def assemble_audio_chunks(txt_file:str, out_file:str, is_gui_process:bool)->bool
             with open(txt_file, 'r') as f:
                 for line in f:
                     if line.strip().startswith('file'):
-                        file_path = (
-                            line.strip()
-                            .split('file ')[1]
-                            .strip()
-                            .strip("'")
-                            .strip('"')
-                        )
+                        file_token = line.strip().split('file ', 1)[1].strip()
+                        file_path = ffconcat_unquote_path(file_token)
+                        if not os.path.isabs(file_path):
+                            file_path = os.path.join(os.path.dirname(txt_file), file_path)
                         if os.path.exists(file_path):
                             filepaths.append(file_path)
             durations = get_audiolist_duration(filepaths)

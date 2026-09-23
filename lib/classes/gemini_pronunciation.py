@@ -11,6 +11,7 @@ from google.genai import types
 
 from lib.classes.gemini_agent import (
     DEFAULT_GEMINI_MODEL,
+    api_pool_retry_after,
     available_api_keys,
     classify_api_error,
     get_session_api_keys,
@@ -158,7 +159,15 @@ class GeminiPronunciationProcessor:
         )
 
         last_error: Exception | None = None
-        for _, key in available_api_keys(self.api_keys):
+        eligible_keys = available_api_keys(self.api_keys)
+        if not eligible_keys:
+            retry_after = api_pool_retry_after(self.api_keys)
+            if retry_after is not None:
+                raise PronunciationError(
+                    f"Semua API key Gemini sedang cooldown. Coba lagi sekitar {retry_after} detik."
+                )
+            raise PronunciationError("Tidak ada API key Gemini yang valid/aktif untuk pronunciation.")
+        for _, key in eligible_keys:
             try:
                 client = genai.Client(api_key=key)
                 response = client.models.generate_content(

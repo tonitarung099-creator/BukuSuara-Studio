@@ -81,6 +81,10 @@ def main() -> int:
         errors.append("Headless Directory Mode masih case-sensitive untuk ekstensi ebook")
     if "The provided --custom_model" not in app_source:
         errors.append("Headless custom model belum divalidasi sebelum konversi")
+    if "--output_dir must be an existing directory" not in app_source:
+        errors.append("Headless output_dir belum divalidasi sebagai directory")
+    if "elif not error and args.get('ebook'" not in app_source:
+        errors.append("Headless source branch masih bisa lanjut setelah validasi gagal")
     if "standalone/static FFmpeg" not in app_source or "if ffmpeg and ffprobe:" not in app_source:
         errors.append("Startup Windows masih menolak FFmpeg standalone/static")
 
@@ -114,6 +118,8 @@ def main() -> int:
         errors.append("Bootstrap voice belum dipatok ke folder aplikasi")
     if "DEVICE_INSTALLER_ROOT / 'detect_gpus.py'" not in device_installer_source:
         errors.append("GPU probe masih mencari detect_gpus.py dari working directory")
+    if "Unsafe voice ZIP path" not in device_installer_source:
+        errors.append("Ekstraksi ZIP voice belum melindungi path traversal")
 
     requirements = Path("requirements.txt").read_text(encoding="utf-8")
     if "./ext/py/demucs" in requirements:

@@ -134,6 +134,20 @@ class SessionTracker:
         with self.lock:
             context.sessions.pop(session_id, None)
 
+def session_has_active_client(session:Any, allow_hash:str|None=None)->bool:
+    """Return True when another live Gradio client currently owns this session."""
+    if not session or not session.get('id', False):
+        return False
+    for socket_hash in list(active_sessions):
+        if socket_hash == allow_hash:
+            continue
+        try:
+            if socket_hash in session:
+                return True
+        except Exception:
+            continue
+    return False
+
 class SessionContext:
     def __init__(self):
         self.manager:Manager = Manager()

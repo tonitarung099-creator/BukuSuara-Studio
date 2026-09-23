@@ -28,3 +28,20 @@ jobs:
         run: python tools/ui_audit.py
       - name: Audit Gradio callback arity
         run: python tools/callback_audit.py
+
+
+  windows-bootstrap-smoke:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Check Windows launcher version path
+        shell: cmd
+        run: ebook2audiobook.cmd --version
+      - name: Check browser helper timeout behavior
+        shell: powershell
+        run: |
+          & .\.bh.ps1 -HostName 127.0.0.1 -Port 9 -TimeoutSeconds 5
+          if ($LASTEXITCODE -ne 1) {
+            throw "Expected browser helper timeout exit code 1, got $LASTEXITCODE"
+          }

@@ -1,4 +1,7 @@
 import os, re, sys, platform, shutil, subprocess, importlib, json, tempfile
+from pathlib import Path
+
+DEVICE_INSTALLER_ROOT = Path(__file__).resolve().parents[2]
 
 from functools import cached_property
 from typing import Union
@@ -1982,7 +1985,7 @@ class DeviceInstaller():
                 members:list = zf.infolist()
                 desc:str = 'Extracting voices'
                 for member in tqdm(members, desc=desc, unit='file'):
-                    zf.extract(member, './')
+                    zf.extract(member, str(DEVICE_INSTALLER_ROOT))
             zip_path.unlink()
             return 0 if has_wav() else 1
         except Exception as e:

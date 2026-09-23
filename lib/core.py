@@ -1311,7 +1311,8 @@ def get_cover(epubBook:EpubBook, session_id:str)->bool|str:
                     image = image.convert('RGB')
                 image.save(cover_path, format = 'JPEG')
                 return cover_path
-            return True
+            # A cover is optional. None means "continue without embedding artwork".
+            return None
     except Exception as e:
         DependencyError(e)
         return False
@@ -3192,7 +3193,7 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
                 error = f'{Path(final_file).name} is corrupted or does not exist'
                 print(error)
                 return False
-            if session['cover'] is not None:
+            if isinstance(session.get('cover'), str) and os.path.isfile(session['cover']):
                 cover_path = session['cover']
                 msg = f'Adding cover {cover_path} into the final audiobook file…'
                 print(msg)
@@ -4081,8 +4082,9 @@ def convert_ebook(args:dict)->tuple:
                                     final_language in default_engine_settings[session['tts_engine']].get('languages', {})
                                 )
                                 if is_lang_in_tts_engine:
-                                    session['cover'] = get_cover(epubBook, session_id)
-                                    if session.get('cover', False):
+                                    cover_result = get_cover(epubBook, session_id)
+                                    if cover_result is not False:
+                                        session['cover'] = cover_result if isinstance(cover_result, str) else None
                                         if missing_orig_json:
                                             raw_blocks = get_blocks(session_id, epubBook)
                                             if raw_blocks and session.get('translate_enabled'):

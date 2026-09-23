@@ -86,9 +86,8 @@ set "NODE_PATH=%SCOOP_HOME%\apps\nodejs\current"
 set "TESSDATA_PREFIX=%SAFE_SCRIPT_DIR%\models\tessdata"
 set "TESSDATA_BASE_URL=https://github.com/tesseract-ocr/tessdata_best/raw/main"
 set "FFMPEG_BIN=%SCOOP_HOME%\apps\ffmpeg\current\bin"
-set "FFMPEG_SHARED_BIN=%SCOOP_HOME%\apps\ffmpeg-shared\current\bin"
 set "FFMPEG_VARIANT=none"
-set "PATH=%PORTABLE_BIN%;%SCOOP_SHIMS%;%SCOOP_APPS%;%NODE_PATH%;%FFMPEG_BIN%;%FFMPEG_SHARED_BIN%;%PATH%"
+set "PATH=%PORTABLE_BIN%;%SCOOP_SHIMS%;%SCOOP_APPS%;%NODE_PATH%;%FFMPEG_BIN%;%PATH%"
 set "INSTALLED_LOG=%SAFE_SCRIPT_DIR%\.installed"
 set "UNINSTALLER=%SAFE_SCRIPT_DIR%\uninstall.cmd"
 set "BROWSER_HELPER=%SAFE_SCRIPT_DIR%\.bh.ps1"
@@ -384,10 +383,6 @@ for %%p in (!program_list!) do (
         where.exe /Q !prog! >nul 2>&1
         if errorlevel 1 (
 			set "missing_prog_array=!missing_prog_array! %%p"
-		) else (
-			if "%%p"=="ffmpeg-shared" (
-				call :check_ffmpeg_shared
-			)
 		)
     )
 )
@@ -565,15 +560,6 @@ for %%p in (%missing_prog_array%) do (
 	)
 	if "%%p"=="nodejs" (
 		set "prog=node"
-	)
-	if "%%p"=="ffmpeg-shared" (
-		set "prog=ffmpeg"
-		if exist "%SAFE_USERPROFILE%\scoop\apps\ffmpeg-shared\current\bin\ffmpeg.exe" (
-			set "_FFMPEG_PATH=%SAFE_USERPROFILE%\scoop\apps\ffmpeg-shared\current\bin"
-			echo !PATH! | findstr /i /c:"!_FFMPEG_PATH!" >nul 2>&1 || (
-				set "PATH=!_FFMPEG_PATH!;!PATH!"
-			)
-		)
 	)
 	if "%%p"=="rustup" (
 		if exist "%SAFE_USERPROFILE%\scoop\apps\rustup\current\.cargo\bin\rustup.exe" (

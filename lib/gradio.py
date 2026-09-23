@@ -1,5 +1,5 @@
 from lib.core import *
-from lib.classes.gemini_agent import GeminiAgent, FREE_TIER_MODELS, DEFAULT_GEMINI_MODEL, MAX_API_KEYS, parse_api_keys
+from lib.classes.gemini_agent import GeminiAgent, FREE_TIER_MODELS, DEFAULT_GEMINI_MODEL, MAX_API_KEYS, parse_api_keys, set_session_api_keys, set_session_model
 
 def build_interface(args:dict)->gr.Blocks:
     from lib.classes.tts_engines.common.preset_loader import load_engine_presets
@@ -25,8 +25,11 @@ def build_interface(args:dict)->gr.Blocks:
         audiobook_options = []
         options_output_split_hours = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
 
-        def _count_gemini_keys(api_keys_text:str)->str:
+        def _store_gemini_config(session_id:str, api_keys_text:str, model:str)->str:
             keys = parse_api_keys(api_keys_text)
+            if session_id:
+                set_session_api_keys(session_id, keys)
+                set_session_model(session_id, model or DEFAULT_GEMINI_MODEL)
             return f"{len(keys)}/{MAX_API_KEYS} API key terdeteksi"
 
         def _run_gemini_agent(session_id:str, api_keys_text:str, model:str, prompt:str, history:list|None)->tuple:
@@ -50,6 +53,8 @@ def build_interface(args:dict)->gr.Blocks:
                     gr.update(), gr.update(), gr.update(), gr.update()
                 )
             keys = parse_api_keys(api_keys_text)
+            set_session_api_keys(session_id, keys)
+            set_session_model(session_id, model or DEFAULT_GEMINI_MODEL)
             agent = GeminiAgent(api_keys=keys or None, model=model or DEFAULT_GEMINI_MODEL)
             result = agent.run(session=session, prompt=prompt, history=history)
             history.extend([
@@ -996,8 +1001,14 @@ Isi buku/file **tidak dikirim otomatis** ke Gemini. Hanya perintah yang Anda ket
                             gr_session, gr_gemini_api_keys, gr_gemini_model, gr_gemini_prompt, gr_gemini_chat
                         ]
                         gr_gemini_api_keys.change(
-                            fn=_count_gemini_keys,
-                            inputs=[gr_gemini_api_keys],
+                            fn=_store_gemini_config,
+                            inputs=[gr_session, gr_gemini_api_keys, gr_gemini_model],
+                            outputs=[gr_gemini_key_count],
+                            queue=False
+                        )
+                        gr_gemini_model.change(
+                            fn=_store_gemini_config,
+                            inputs=[gr_session, gr_gemini_api_keys, gr_gemini_model],
                             outputs=[gr_gemini_key_count],
                             queue=False
                         )

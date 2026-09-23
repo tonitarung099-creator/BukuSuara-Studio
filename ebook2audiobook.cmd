@@ -30,8 +30,6 @@ for /f "delims=" %%e in ('
     cmd /c ""%PS_EXE%" %PS_ARGS% -Command "[char]27""
 ') do set "ESC=%%e"
 
-:: Capture all arguments into ARGS
-set "ARGS=%*"
 set "NATIVE=native"
 set "BUILD_DOCKER=build_docker"
 set "FULL_DOCKER=full_docker"
@@ -94,7 +92,7 @@ set "PATH=%PORTABLE_BIN%;%SCOOP_SHIMS%;%SCOOP_APPS%;%NODE_PATH%;%FFMPEG_BIN%;%FF
 set "INSTALLED_LOG=%SAFE_SCRIPT_DIR%\.installed"
 set "UNINSTALLER=%SAFE_SCRIPT_DIR%\uninstall.cmd"
 set "BROWSER_HELPER=%SAFE_SCRIPT_DIR%\.bh.ps1"
-set "HEADLESS_FOUND=%ARGS:--headless=%"
+set "HEADLESS_REQUESTED=0"
 set "WSL_VERSION="
 set "DOCKER_IN_WSL=0"
 set "DOCKER_DESKTOP=0"
@@ -145,30 +143,37 @@ if not "%~1"=="" (
     )
 )
 
+call :parse_args %*
+goto :parse_args_done
+
+:is_cli_option
+set "CHECK_OPTION=%~1"
+if "%CHECK_OPTION:~0,2%"=="--" exit /b 0
+exit /b 1
+
 :parse_args
-rem No setlocal here: arguments.* are set in the current scope so they reach :main
-rem without an endlocal tunnel. Indirect names are set via call set "...%%key%%...".
-if "%~1"=="" goto :parse_args_done
+if "%~1"=="" exit /b 0
 set "arg=%~1"
 if "%arg:~0,2%"=="--" (
     set "key=%arg:~2%"
     if not "%~2"=="" (
-        echo %~2 | findstr "^--" >nul
+        call :is_cli_option "%~2"
         if errorlevel 1 (
             call set "arguments.%%key%%=%~2"
             shift
             shift
-            goto parse_args
+            goto :parse_args
         )
     )
     call set "arguments.%%key%%=true"
     shift
-    goto parse_args
+    goto :parse_args
 )
 shift
-goto parse_args
+goto :parse_args
 
 :parse_args_done
+if defined arguments.headless if /i "%arguments.headless%"=="true" set "HEADLESS_REQUESTED=1"
 if defined arguments.script_mode (
     set "script_mode_valid=0"
     if /i "%arguments.script_mode%"=="%BUILD_DOCKER%" set "script_mode_valid=1"
@@ -268,8 +273,8 @@ goto :main
 ::::::::::::::: DESKTOP APP
 :build_gui
 rem Portable mode: never create Start Menu/Desktop shortcuts or uninstall registry entries.
-rem HEADLESS_FOUND equals ARGS only when --headless is absent.
-if /i "%HEADLESS_FOUND%"=="%ARGS%" (
+rem Open the browser only for GUI mode.
+if "%HEADLESS_REQUESTED%"=="0" (
     if exist "%BROWSER_HELPER%" (
         start "BukuSuara Studio" /min "%PS_EXE%" %PS_ARGS% -File "%BROWSER_HELPER%" -HostName "%TEST_HOST%" -Port %TEST_PORT%
     )
@@ -624,7 +629,7 @@ set "missing_prog_array="
 goto :main
 
 :run_conda_env
-call python.exe -u "%SAFE_SCRIPT_DIR%\app.py" --script_mode %NATIVE% %ARGS%
+call python.exe -u "%SAFE_SCRIPT_DIR%\app.py" --script_mode %NATIVE% %*
 set "APP_RC=%ERRORLEVEL%"
 call conda deactivate >nul 2>&1
 call conda deactivate >nul 2>&1
@@ -645,7 +650,7 @@ exit /b 0
 call :check_sitecustomized
 if errorlevel 1 exit /b 1
 call :build_gui
-call "%SAFE_SCRIPT_DIR%\%PYTHON_ENV%\python.exe" -u "%SAFE_SCRIPT_DIR%\app.py" --script_mode %NATIVE% %ARGS%
+call "%SAFE_SCRIPT_DIR%\%PYTHON_ENV%\python.exe" -u "%SAFE_SCRIPT_DIR%\app.py" --script_mode %NATIVE% %*
 exit /b %ERRORLEVEL%
 
 :check_conda
@@ -1027,7 +1032,7 @@ if defined arguments.help (
 				)
 			)
 		)
-        call python -u "%SAFE_SCRIPT_DIR%\app.py" %ARGS%
+        call python -u "%SAFE_SCRIPT_DIR%\app.py" %*
         goto :eof
     )
 ) else (
@@ -1080,7 +1085,7 @@ if defined arguments.help (
     ) else if "%SCRIPT_MODE%"=="%NATIVE%" (
 		call :portable_env_ready
 		if not errorlevel 1 (
-			call :run_portable_env
+			call :run_portable_env %*
 			goto :eof
 		)
 		call :check_scoop
@@ -1098,12 +1103,12 @@ if defined arguments.help (
         call :check_sitecustomized
         if errorlevel 1 goto :failed
         call :build_gui
-        call :run_conda_env
+        call :run_conda_env %*
         goto :eof
     ) else if "%SCRIPT_MODE%"=="%FULL_DOCKER%" (
         call :check_sitecustomized
         if errorlevel 1 goto :failed
-        call python.exe -u "%SAFE_SCRIPT_DIR%\app.py" --script_mode %SCRIPT_MODE% %ARGS%
+        call python.exe -u "%SAFE_SCRIPT_DIR%\app.py" --script_mode %SCRIPT_MODE% %*
 	)
 )
 goto :eof
@@ -1121,17 +1126,8 @@ endlocal
 exit /b %CODE%
 
 :restart_script
-net session >nul 2>&1
-if not errorlevel 1 (
-    echo Restarting as normal user %USERNAME%…
-    schtasks /create /tn "RestartScript" /tr "cmd /k cd /d \"%SAFE_SCRIPT_DIR%\" & call %APP_FILE% %ARGS%" /sc once /st 00:00 /ru "%USERNAME%" /it /f >nul 2>&1
-    schtasks /run /tn "RestartScript" >nul 2>&1
-    timeout /t 2 /nobreak >nul
-    schtasks /delete /tn "RestartScript" /f >nul 2>&1
-    exit 0
-)
-start "%APP_NAME%" cmd /k "cd /d "%SAFE_SCRIPT_DIR%" & call %APP_FILE% %ARGS%"
-exit 0
+start "BukuSuara Studio" "%SAFE_SCRIPT_DIR%\%APP_FILE%" %*
+exit /b 0
 
 endlocal
 pause

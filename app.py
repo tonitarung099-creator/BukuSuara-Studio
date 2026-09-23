@@ -211,8 +211,8 @@ Default is set in ./lib/conf.py if not present. Fall back to CPU if CUDA or MPS 
 Default depends on the selected language. The tts engine should be compatible with the chosen language''')
     headless_optional_group.add_argument(cli_options[14], type=str, default=None, help='Path to the custom model zip file cntaining mandatory model files. Please refer to ./lib/models.py')
     headless_optional_group.add_argument(cli_options[15], type=str, default=default_fine_tuned, help='Fine tuned model path. Default is builtin model.')
-    headless_optional_group.add_argument(cli_options[16], type=str, default=default_output_format, help=f'Output audio format. Default is {default_output_format} set in ./lib/conf.py')
-    headless_optional_group.add_argument(cli_options[17], type=str, default=default_output_channel, help=f'Output audio channel. Default is {default_output_channel} set in ./lib/conf.py')
+    headless_optional_group.add_argument(cli_options[16], type=str, choices=output_formats, default=default_output_format, help=f'Output audio format. Default is {default_output_format} set in ./lib/conf.py')
+    headless_optional_group.add_argument(cli_options[17], type=str, choices=['mono', 'stereo'], default=default_output_channel, help=f'Output audio channel. Default is {default_output_channel} set in ./lib/conf.py')
     headless_optional_group.add_argument(cli_options[18], type=float, default=default_engine_settings[TTS_ENGINES['XTTS']]['temperature'], help=f"""(xtts only, optional) Temperature for the model. 
 Default to config.json model. Higher temperatures lead to more creative outputs.""")
     headless_optional_group.add_argument(cli_options[19], type=float, default=default_engine_settings[TTS_ENGINES['XTTS']]['length_penalty'], help=f"""(xtts only, optional) A length penalty applied to the autoregressive decoder. 

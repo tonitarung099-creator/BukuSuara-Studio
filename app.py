@@ -451,6 +451,9 @@ Default to config.json model.""")
                             if not args['ebook_list']:
                                 error = 'Error: No supported ebook files found in --ebooks_dir.'
                             else:
+                                # Keep an independent authoritative queue in the session too.
+                                # finalize_audiobook() removes completed books from this list.
+                                c.context.sessions[args['id']]['ebook_list'] = copy.deepcopy(args['ebook_list'])
                                 ebook_list = copy.deepcopy(args['ebook_list'])
                                 for file in ebook_list:
                                     c.context.sessions[args['id']]['status'] = c.status_tags['READY']

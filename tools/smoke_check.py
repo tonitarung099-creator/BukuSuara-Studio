@@ -142,6 +142,11 @@ def main() -> int:
         errors.append("Path portable belum dipatok ke lokasi aplikasi")
     if "open(os.path.join(_project_dir, 'VERSION.txt')" not in conf_source:
         errors.append("VERSION.txt masih bergantung pada working directory")
+    if "existing_espeak_data = os.environ.get('ESPEAK_DATA_PATH')" not in conf_source:
+        errors.append("Konfigurasi Windows masih dapat menimpa ESPEAK_DATA_PATH yang valid")
+    if "eSpeak NG\\espeak-ng-data" not in conf_source:
+        errors.append("Fallback path eSpeak Scoop belum mencakup layout eSpeak NG")
+
 
     app_source = Path("app.py").read_text(encoding="utf-8")
     if "name.lower().endswith(str(ext).lower())" not in app_source:

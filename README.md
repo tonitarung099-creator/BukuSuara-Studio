@@ -74,3 +74,19 @@ GEMINI_API_KEYS=AIza_key1,AIza_key2,AIza_key3
 ### Hemat Free Tier
 
 Agent membatasi automatic function-calling agar satu perintah tidak membuat rantai request yang terlalu panjang. Riwayat chat yang dikirim juga dipotong. File/isi buku tidak dikirim otomatis; hanya perintah yang diketik pengguna, riwayat chat ringkas, dan setting aplikasi. Jika ingin meminta Gemini memproses isi buku, fitur tersebut harus dibuat sebagai tindakan eksplisit agar penggunaan token dapat dikontrol.
+
+
+### Pronunciation otomatis DOCX/TXT
+
+Untuk sumber **DOCX/TXT Bahasa Indonesia**, proses Generate sekarang bersifat strict:
+
+1. teks asli diekstrak tanpa menimpa file sumber;
+2. aplikasi mendeteksi kandidat nama/istilah asing unik;
+3. Gemini menilai kandidat dan membuat alias ejaan bunyi Indonesia;
+4. keputusan Gemini disimpan di `gemini_pronunciation_map.json` pada folder proses, termasuk istilah yang diputuskan tidak perlu diubah;
+5. alias diterapkan ke teks kerja internal;
+6. baru setelah pronunciation pass sukses, BukuSuara memecah kalimat dan menjalankan TTS.
+
+Jika API key belum diisi atau seluruh key gagal/limit, **TTS DOCX/TXT Indonesia tidak dilanjutkan**. Saat key kena 429/quota atau error sementara, sistem otomatis mencoba key berikutnya hingga pool maksimal 100 key.
+
+Untuk efisiensi, seluruh buku tidak dikirim ulang ke Gemini. Yang dikirim adalah kandidat istilah unik dan konteks pendek. Karena keputusan dicache, kemunculan nama yang sama ratusan kali tidak membutuhkan request tambahan.

@@ -94,6 +94,19 @@ def main() -> int:
     if "if not os.path.exists(session['custom_model']):" not in gradio_source:
         errors.append("Restore session belum memvalidasi path custom model secara langsung")
 
+    for engine_source in (
+        "lib/classes/tts_engines/fairseq.py",
+        "lib/classes/tts_engines/vits.py",
+        "lib/classes/tts_engines/piper.py",
+    ):
+        engine_text = Path(engine_source).read_text(encoding="utf-8")
+        if "if semitones > 0:" in engine_text:
+            errors.append(f"{engine_source}: pitch negatif masih diabaikan")
+        if "SoX is required for voice pitch adaptation" not in engine_text:
+            errors.append(f"{engine_source}: dependency SoX belum divalidasi")
+        if "check=True" not in engine_text:
+            errors.append(f"{engine_source}: kegagalan SoX masih bisa lolos diam-diam")
+
     requirements = Path("requirements.txt").read_text(encoding="utf-8")
     if "./ext/py/demucs" in requirements:
         errors.append("requirements.txt masih memakai dependency Demucs lokal yang tidak portable")

@@ -2572,13 +2572,42 @@ Chat agent tidak mengirim seluruh isi buku. Untuk **DOCX/TXT Bahasa Indonesia**,
                     session_id:str, device:str, ebook_mode:str, ebook_src:str|list|None, ebook_textarea:str|None, blocks_preview:bool, tts_engine:str, language:str, voice:str, custom_model:str, fine_tuned:str, output_format:str, output_channel:str, xtts_temperature:float, 
                     xtts_length_penalty:int, xtts_num_beams:int, xtts_repetition_penalty:float, xtts_top_k:int, xtts_top_p:float, xtts_speed:float, xtts_enable_text_splitting:bool, bark_text_temp:float, bark_waveform_temp:float,
                     output_split:bool, output_split_hours:str,
-                    translate_enabled:bool, translate_target:str|None
+                    translate_enabled:bool, translate_target:str|None,
+                    gemini_api_keys:str|None, gemini_model:str|None
                 )->tuple:
                 error = None
                 try:
                     session = context.get_session(session_id)
                     reset_ebook_session(session_id, force=True, filter_keys=False)
                     if session and session.get('id', False):
+                        # Capture Gemini configuration at the exact Generate click.
+                        # This avoids a race where keys are visible in the UI but the
+                        # textbox change event has not populated the in-memory pool yet.
+                        set_session_api_keys(session_id, gemini_api_keys)
+                        set_session_model(session_id, gemini_model or DEFAULT_GEMINI_MODEL)
+
+                        effective_language = translate_target if (translate_enabled and translate_target) else language
+                        auto_sources = []
+                        if ebook_mode == ebook_modes['TEXT']:
+                            auto_sources = ['.txt']
+                        elif ebook_mode == ebook_modes['SINGLE'] and ebook_src:
+                            auto_sources = [Path(str(ebook_src)).suffix.lower()]
+                        elif ebook_mode == ebook_modes['DIRECTORY']:
+                            source_list = ebook_src if isinstance(ebook_src, list) else session.get('ebook_list')
+                            if isinstance(source_list, list):
+                                auto_sources = [
+                                    Path(str(path)).suffix.lower()
+                                    for path in source_list
+                                    if any(str(path).lower().endswith(ext) for ext in ebook_formats)
+                                ]
+                        if (
+                            effective_language == 'ind'
+                            and auto_sources
+                            and all(ext in {'.docx', '.txt'} for ext in auto_sources)
+                        ):
+                            # User requested a hands-off DOCX/TXT flow: Gemini pronunciation
+                            # must finish and generation continues without chapter editing.
+                            blocks_preview = False
                         if not session['cancellation_requested']:
                             args = {
                                 "id": session_id,
@@ -2600,7 +2629,7 @@ Chat agent tidak mengirim seluruh isi buku. Untuk **DOCX/TXT Bahasa Indonesia**,
                                 "output_channel": output_channel,
                                 "xtts_temperature": float(xtts_temperature),
                                 "xtts_length_penalty": float(xtts_length_penalty),
-                                "xtts_num_beams":int(session['xtts_num_beams']),
+                                "xtts_num_beams": int(xtts_num_beams),
                                 "xtts_repetition_penalty": float(xtts_repetition_penalty),
                                 "xtts_top_k":int(xtts_top_k),
                                 "xtts_top_p": float(xtts_top_p),
@@ -3227,7 +3256,8 @@ Chat agent tidak mengirim seluruh isi buku. Untuk **DOCX/TXT Bahasa Indonesia**,
                 gr_custom_model_list, gr_fine_tuned_list, gr_output_format_list, gr_output_channel_list,
                 gr_xtts_temperature, gr_xtts_length_penalty, gr_xtts_num_beams, gr_xtts_repetition_penalty, gr_xtts_top_k, gr_xtts_top_p, gr_xtts_speed, gr_xtts_enable_text_splitting,
                 gr_bark_text_temp, gr_bark_waveform_temp, gr_output_split, gr_output_split_hours,
-                gr_translate_enabled, gr_translate
+                gr_translate_enabled, gr_translate,
+                gr_gemini_api_keys, gr_gemini_model
             ]
             outputs_disable_components = [
                 gr_ebook_textarea, gr_ebook_mode, gr_blocks_preview, gr_language, gr_voice_file, gr_voice_list,

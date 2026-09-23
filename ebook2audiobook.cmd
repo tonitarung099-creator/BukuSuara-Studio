@@ -25,12 +25,6 @@ if errorlevel 99 (
 :: Ensure PS output encoding is UTF-8 for this session (non-persistent)
 "%PS_EXE%" %PS_ARGS% -Command "[Console]::OutputEncoding=[System.Text.Encoding]::UTF8" >nul 2>&1
 
-:: Enable ANSI VT mode
-reg query HKCU\Console /v VirtualTerminalLevel >nul 2>&1
-if errorlevel 1 (
-    reg add HKCU\Console /v VirtualTerminalLevel /t REG_DWORD /d 1 /f >nul
-)
-
 :: Real ESC byte via PowerShell (RELIABLE)
 for /f "delims=" %%e in ('
     cmd /c ""%PS_EXE%" %PS_ARGS% -Command "[char]27""
@@ -65,7 +59,7 @@ set "PYTHON_ENV=python_env"
 set "PYTHONUTF8=1"
 set "PYTHONIOENCODING=utf-8"
 set "CURRENT_ENV="
-set "HOST_PROGRAMS=cmake rustup calibre ffmpeg-shared mediainfo nodejs espeak-ng sox tesseract"
+set "HOST_PROGRAMS=cmake rustup calibre ffmpeg mediainfo nodejs espeak-ng sox tesseract"
 :: tesseract-ocr-[lang] and calibre are hardcoded in Dockerfile
 set "DOCKER_PROGRAMS=curl ffmpeg mediainfo nodejs espeak-ng sox tesseract-ocr"
 set "DOCKER_CALIBRE_INSTALLER_URL=https://download.calibre-ebook.com/linux-installer.sh"
@@ -80,6 +74,7 @@ set "TEMP=%SAFE_SCRIPT_DIR%\run"
 if not exist "%TMP%" mkdir "%TMP%" >nul 2>&1
 set "CONDA_URL=https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Windows-x86_64.exe"
 set "CONDA_INSTALLER=Miniforge3-Windows-x86_64.exe"
+set "PORTABLE_BIN=%SAFE_SCRIPT_DIR%\tools\bin"
 set "SCOOP_HOME=%SAFE_USERPROFILE%\scoop"
 set "SCOOP_SHIMS=%SCOOP_HOME%\shims"
 set "SCOOP_APPS=%SCOOP_HOME%\apps"
@@ -90,9 +85,10 @@ set "ESPEAK_DATA_PATH=%SCOOP_HOME%\apps\espeak-ng\current\eSpeak NG\espeak-ng-da
 set "NODE_PATH=%SCOOP_HOME%\apps\nodejs\current"
 set "TESSDATA_PREFIX=%SAFE_SCRIPT_DIR%\models\tessdata"
 set "TESSDATA_BASE_URL=https://github.com/tesseract-ocr/tessdata_best/raw/main"
-set "FFMPEG_BIN=%USERPROFILE%\scoop\apps\ffmpeg-shared\current\bin"
+set "FFMPEG_BIN=%SCOOP_HOME%\apps\ffmpeg\current\bin"
+set "FFMPEG_SHARED_BIN=%SCOOP_HOME%\apps\ffmpeg-shared\current\bin"
 set "FFMPEG_VARIANT=none"
-set "PATH=%SCOOP_SHIMS%;%SCOOP_APPS%;%NODE_PATH%;%FFMPEG_BIN%;%PATH%"
+set "PATH=%PORTABLE_BIN%;%SCOOP_SHIMS%;%SCOOP_APPS%;%NODE_PATH%;%FFMPEG_BIN%;%FFMPEG_SHARED_BIN%;%PATH%"
 set "INSTALLED_LOG=%SAFE_SCRIPT_DIR%\.installed"
 set "UNINSTALLER=%SAFE_SCRIPT_DIR%\uninstall.cmd"
 set "BROWSER_HELPER=%SAFE_SCRIPT_DIR%\.bh.ps1"
@@ -361,7 +357,6 @@ for %%p in (%HOST_PROGRAMS%) do (
     set "_found=0"
     if "%%p"=="nodejs"  set "prog=node"
     if "%%p"=="calibre" set "prog=ebook-convert"
-    if "%%p"=="ffmpeg-shared" set "prog=ffmpeg"
     if "%%p"=="rustup" (
         if exist "%SAFE_USERPROFILE%\scoop\apps\rustup\current\.cargo\bin\rustup.exe" set "_found=1"
     )

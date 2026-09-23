@@ -85,6 +85,8 @@ def main() -> int:
     gradio_source = Path("lib/gradio.py").read_text(encoding="utf-8")
     if "Missing voice must not invalidate the selected ebook." not in gradio_source:
         errors.append("Restore session masih berisiko menghapus ebook_src ketika voice hilang")
+    if "The process copy may be cleaned while the original source still exists." not in gradio_source:
+        errors.append("Restore session masih berisiko menghapus source asli saat cache ebook hilang")
     if "data = data if isinstance(data, Mapping) else {}" not in gradio_source:
         errors.append("Restore session belum aman saat data awal None/tidak valid")
     if "if not os.path.exists(session['custom_model']):" not in gradio_source:

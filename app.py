@@ -407,9 +407,29 @@ Default to config.json model.""")
                                         error = 'Error: --voice_map JSON must be an object {ebook_path: voice_path}.'
                                     else:
                                         voice_map = {}
+                                        voice_map_dir = os.path.dirname(voice_map_path)
                                         for k, v in raw.items():
-                                            normalized_key = os.path.abspath(k) if os.path.isabs(k) else k
-                                            voice_map[normalized_key] = os.path.abspath(v) if v else None
+                                            key_text = str(k).strip()
+                                            if not key_text:
+                                                continue
+                                            # A bare filename remains a basename lookup. Relative paths
+                                            # with directories are resolved against --ebooks_dir.
+                                            if os.path.isabs(key_text):
+                                                normalized_key = os.path.abspath(key_text)
+                                            elif os.path.basename(key_text) == key_text:
+                                                normalized_key = key_text
+                                            else:
+                                                normalized_key = os.path.abspath(os.path.join(args['ebooks_dir'], key_text))
+                                            if v:
+                                                voice_text = str(v).strip()
+                                                normalized_voice = (
+                                                    os.path.abspath(voice_text)
+                                                    if os.path.isabs(voice_text)
+                                                    else os.path.abspath(os.path.join(voice_map_dir, voice_text))
+                                                )
+                                            else:
+                                                normalized_voice = None
+                                            voice_map[normalized_key] = normalized_voice
                                 except Exception as e:
                                     error = f'Error: Failed to parse --voice_map: {e}'
                         if not error:
@@ -438,7 +458,7 @@ Default to config.json model.""")
                                     args['ebook_src'] = file
                                     # Per-file voice resolution: abs-path override -> basename override -> default
                                     override = voice_map.get(file) or voice_map.get(os.path.basename(file))
-                                    if override and not os.path.exists(override):
+                                    if override and not os.path.isfile(override):
                                         print(f'--voice_map: override for {Path(file).name} ({override}) not found, falling back to --voice')
                                         override = None
                                     args['voice'] = override or default_voice

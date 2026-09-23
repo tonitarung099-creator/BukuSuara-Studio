@@ -75,6 +75,19 @@ def main() -> None:
         new_fingerprint = restored._context_fingerprint(restored._context(changed_context, "George"))
         assert old_fingerprint != new_fingerprint, "context fingerprint must detect changed usage"
 
+        stale_payload = {
+            "version": 1,
+            "aliases": {"George": "Alias-Lama"},
+            "reviewed": ["George"],
+            "reviewed_context": {"George": "deadbeef"},
+        }
+        cache_path = Path(tmp, "gemini_pronunciation_map.json")
+        cache_path.write_text(__import__("json").dumps(stale_payload), encoding="utf-8")
+        stale = GeminiPronunciationProcessor("ci-test", tmp)
+        assert stale.cache == {}, "old pronunciation cache version must be invalidated"
+        assert not stale.reviewed
+        assert not stale.reviewed_context
+
     print("Gemini pronunciation logic: OK")
 
 

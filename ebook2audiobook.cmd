@@ -318,12 +318,19 @@ for /f "tokens=1-3 delims=." %%a in ("%MIN_PYTHON_VERSION%") do (
 	set "REQ_MINOR=%%b"
 	set "REQ_PATCH=0"
 )
+for /f "tokens=1-3 delims=." %%a in ("%MAX_PYTHON_VERSION%") do (
+	set "MAX_MAJOR=%%a"
+	set "MAX_MINOR=%%b"
+	set "MAX_PATCH=0"
+)
 set "PYTHON_OK=1"
 if %INS_MAJOR% lss %REQ_MAJOR% set "PYTHON_OK=0"
 if %INS_MAJOR% equ %REQ_MAJOR% if %INS_MINOR% lss %REQ_MINOR% set "PYTHON_OK=0"
 if %INS_MAJOR% equ %REQ_MAJOR% if %INS_MINOR% equ %REQ_MINOR% if %INS_PATCH% lss %REQ_PATCH% set "PYTHON_OK=0"
+if %INS_MAJOR% gtr %MAX_MAJOR% set "PYTHON_OK=0"
+if %INS_MAJOR% equ %MAX_MAJOR% if %INS_MINOR% gtr %MAX_MINOR% set "PYTHON_OK=0"
 if "%PYTHON_OK%"=="0" (
-	echo Python %INSTALLED_VERSION% found but %MIN_PYTHON_VERSION% or higher is required.
+	echo Python %INSTALLED_VERSION% found but supported range is %MIN_PYTHON_VERSION% through %MAX_PYTHON_VERSION%.
 	exit /b 1
 )
 exit /b 0

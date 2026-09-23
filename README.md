@@ -33,3 +33,42 @@ Fondasi core upstream sudah diimpor. Tahap berikutnya adalah:
 - Upstream tree saat basis diambil: `3a56c25c5c839306f765bcf0334b5af078e66684`
 
 Dokumentasi asli disimpan di `docs/UPSTREAM_README.md`.
+
+
+## Agen AI Gemini
+
+BukuSuara Studio memiliki tab **🤖 Agen Gemini** yang dirancang untuk API Gemini Free Tier.
+
+Fitur awal agent:
+- chat Bahasa Indonesia di dalam aplikasi;
+- membaca setting ringkas BukuSuara tanpa membaca isi buku secara otomatis;
+- mengubah format output (MP3/M4B/WAV/dll.);
+- mengubah kanal mono/stereo;
+- mengaktifkan/nonaktifkan pratinjau bab;
+- mengubah kecepatan XTTS;
+- menampilkan model, key aktif, dan penggunaan token bila metadata tersedia;
+- mendukung beberapa API key dan pindah key pada error kuota/server yang dapat dicoba ulang.
+
+Default model: `gemini-3.5-flash-lite`.
+
+### API key
+
+Masukkan API key langsung pada tab Agen Gemini. Beberapa key dapat dipisahkan dengan koma, titik koma, atau baris baru. Key tidak dimasukkan ke session audiobook dan tidak disimpan ke repository.
+
+Alternatif untuk pemakaian lokal adalah environment variable:
+
+```text
+GEMINI_API_KEY=AIza...
+```
+
+atau:
+
+```text
+GEMINI_API_KEYS=AIza_key1,AIza_key2,AIza_key3
+```
+
+**Catatan kuota:** rate limit Gemini berlaku per Google Cloud/AI Studio project, bukan per API key. Banyak key dari project yang sama tidak menambah kuota project.
+
+### Hemat Free Tier
+
+Agent membatasi automatic function-calling agar satu perintah tidak membuat rantai request yang terlalu panjang. Riwayat chat yang dikirim juga dipotong. File/isi buku tidak dikirim otomatis; hanya perintah yang diketik pengguna, riwayat chat ringkas, dan setting aplikasi. Jika ingin meminta Gemini memproses isi buku, fitur tersebut harus dibuat sebagai tindakan eksplisit agar penggunaan token dapat dikontrol.

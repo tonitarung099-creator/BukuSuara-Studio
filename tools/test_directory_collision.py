@@ -1,23 +1,66 @@
 from pathlib import Path
-import sys
+import ast
+import hashlib
+import os
+import re
+
 
 ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+CORE = ROOT / "lib" / "core.py"
 
-from lib.core import disambiguate_directory_ebook_name, ebook_modes
+
+def get_sanitized(value: str) -> str:
+    value = re.sub(r"[^\w.-]+", "_", str(value), flags=re.UNICODE)
+    return value.strip("._") or "file"
+
+
+def strip_invalid_filename_characters(value: str) -> str:
+    return re.sub(r'[<>:"/\\|?*\x00-\x1F]', "_", str(value)).strip()
+
+
+class EbookModes:
+    DIRECTORY = "directory"
+
+
+ebook_modes = {"DIRECTORY": EbookModes.DIRECTORY}
+
+
+def load_function():
+    source = CORE.read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    node = next(
+        node for node in tree.body
+        if isinstance(node, ast.FunctionDef)
+        and node.name == "disambiguate_directory_ebook_name"
+    )
+    module = ast.Module(body=[node], type_ignores=[])
+    ast.fix_missing_locations(module)
+    namespace = {
+        "Any": object,
+        "Path": Path,
+        "os": os,
+        "hashlib": hashlib,
+        "ebook_modes": ebook_modes,
+        "get_sanitized": get_sanitized,
+        "strip_invalid_filename_characters": strip_invalid_filename_characters,
+    }
+    exec(compile(module, str(CORE), "exec"), namespace)
+    return namespace["disambiguate_directory_ebook_name"]
 
 
 class ProxyLike:
     def __init__(self, values):
         self.values = list(values)
+
     def __iter__(self):
         return iter(self.values)
+
     def __len__(self):
         return len(self.values)
 
 
 def main() -> None:
+    disambiguate = load_function()
     files = [
         "/books/Buku.docx",
         "/books/Buku.txt",
@@ -29,10 +72,10 @@ def main() -> None:
         "ebook_list": ProxyLike(files),
     }
 
-    a = disambiguate_directory_ebook_name(session, "Buku", files[0])
-    b = disambiguate_directory_ebook_name(session, "Buku", files[1])
-    c = disambiguate_directory_ebook_name(session, "Buku", files[2])
-    d = disambiguate_directory_ebook_name(session, "Lain", files[3])
+    a = disambiguate(session, "Buku", files[0])
+    b = disambiguate(session, "Buku", files[1])
+    c = disambiguate(session, "Buku", files[2])
+    d = disambiguate(session, "Lain", files[3])
 
     assert a.startswith("Buku_docx_"), a
     assert c.startswith("Buku_docx_"), c

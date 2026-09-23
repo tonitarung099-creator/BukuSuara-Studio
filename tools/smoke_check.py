@@ -213,6 +213,12 @@ def main() -> int:
         errors.append("Launcher portable masih menulis registry uninstall")
     if ':make_shortcut' in launcher_source:
         errors.append("Launcher portable masih membuat shortcut sistem")
+    if "reg add HKCU\\Console" in launcher_source:
+        errors.append("Launcher portable masih mengubah HKCU\\Console")
+    if 'set "HOST_PROGRAMS=cmake rustup calibre ffmpeg-shared' in launcher_source:
+        errors.append("Launcher masih memaksa ffmpeg-shared walau static FFmpeg didukung")
+    if 'set "PORTABLE_BIN=%SAFE_SCRIPT_DIR%\\tools\\bin"' not in launcher_source:
+        errors.append("Launcher belum memprioritaskan tool portable lokal")
 
     requirements = Path("requirements.txt").read_text(encoding="utf-8")
     if "./ext/py/demucs" in requirements:

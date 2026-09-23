@@ -3222,7 +3222,12 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
             if session['output_format'] == 'wav':
                 target_codec = 'pcm_s16le'
                 target_rate = '44100'
-                cmd += ['-map', '0:a', '-ar', target_rate, '-sample_fmt', 's16']
+                cmd += [
+                    '-f', 'ffmetadata', '-i', metadata_file,
+                    '-map', '0:a',
+                    '-ar', target_rate, '-sample_fmt', 's16',
+                    '-map_metadata', '1',
+                ]
             elif session['output_format'] == 'aac':
                 target_codec = 'aac'
                 target_rate = '44100'

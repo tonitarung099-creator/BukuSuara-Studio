@@ -3230,7 +3230,12 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
             elif session['output_format'] == 'flac':
                 target_codec = 'flac'
                 target_rate = '44100'
-                cmd += ['-c:a', 'flac', '-compression_level', '5', '-ar', target_rate]
+                cmd += [
+                    '-f', 'ffmetadata', '-i', metadata_file,
+                    '-map', '0:a',
+                    '-c:a', 'flac', '-compression_level', '5', '-ar', target_rate,
+                    '-map_metadata', '1',
+                ]
             else:
                 cmd += ['-f', 'ffmetadata', '-i', metadata_file, '-map', '0:a']
                 if session['output_format'] in ['m4a', 'm4b', 'mp4', 'mov']:

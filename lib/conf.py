@@ -148,9 +148,6 @@ for runtime_dir in (
     ebooks_dir,
     voices_dir,
     tts_dir,
-    audiobooks_gradio_dir if 'audiobooks_gradio_dir' in globals() else os.path.join(_project_dir, 'audiobooks', 'gui', 'gradio'),
-    audiobooks_host_dir if 'audiobooks_host_dir' in globals() else os.path.join(_project_dir, 'audiobooks', 'gui', 'host'),
-    audiobooks_cli_dir if 'audiobooks_cli_dir' in globals() else os.path.join(_project_dir, 'audiobooks', 'cli'),
 ):
     os.makedirs(runtime_dir, exist_ok=True)
 

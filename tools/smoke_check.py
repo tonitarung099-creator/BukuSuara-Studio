@@ -219,6 +219,10 @@ def main() -> int:
         errors.append("Launcher masih memaksa ffmpeg-shared walau static FFmpeg didukung")
     if 'set "PORTABLE_BIN=%SAFE_SCRIPT_DIR%\\tools\\bin"' not in launcher_source:
         errors.append("Launcher belum memprioritaskan tool portable lokal")
+    if 'ifi "%PODMAN_DESKTOP%"=="0"' in launcher_source:
+        errors.append("Launcher masih memiliki typo perintah 'ifi' pada jalur help")
+    if 'supported range is %MIN_PYTHON_VERSION% through %MAX_PYTHON_VERSION%' not in launcher_source:
+        errors.append("Launcher belum menolak Python di atas MAX_PYTHON_VERSION")
 
     requirements = Path("requirements.txt").read_text(encoding="utf-8")
     if "./ext/py/demucs" in requirements:

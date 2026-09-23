@@ -29,7 +29,7 @@ from multiprocessing import Manager, Event
 from multiprocessing.managers import DictProxy, ListProxy, SyncManager
 from stanza.pipeline.core import Pipeline, DownloadMethod
 from num2words2 import num2words
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from pydub import AudioSegment
 from pydub.utils import mediainfo
 from queue import Queue, Empty
@@ -927,6 +927,15 @@ def sync_globals_to_blocks(session_id:str)->None:
     except Exception as e:
         exception_alert(session_id, f'sync_globals_to_blocks(): {e}')
 
+def is_safe_archive_member(name:str)->bool:
+    normalized = str(name or '').replace('\\', '/')
+    if not normalized or '\x00' in normalized:
+        return False
+    if normalized.startswith('/') or re.match(r'^[A-Za-z]:', normalized):
+        return False
+    parts = PurePosixPath(normalized).parts
+    return '..' not in parts
+
 def normalize_epub_zip(session_id:str, file_input:str)->str|None:
     try:
         session = context.get_session(session_id)
@@ -934,6 +943,13 @@ def normalize_epub_zip(session_id:str, file_input:str)->str|None:
             return None
         with zipfile.ZipFile(file_input, 'r') as zf:
             names = [n for n in zf.namelist() if n and not n.endswith('/')]
+            unsafe_names = [n for n in names if not is_safe_archive_member(n)]
+            if unsafe_names:
+                print(f'Unsupported ZIP ebook wrapper: unsafe member path {unsafe_names[0]!r}')
+                return None
+            if len(names) != len(set(names)):
+                print('Unsupported ZIP ebook wrapper: duplicate member names are not allowed')
+                return None
             epubs = [n for n in names if n.lower().endswith('.epub')]
             if len(epubs) > 1:
                 msg = f'Unsupported ZIP ebook wrapper: expected one nested .epub file, found {len(epubs)}'
@@ -944,8 +960,8 @@ def normalize_epub_zip(session_id:str, file_input:str)->str|None:
                 # case 1 - a real .epub FILE sits inside the zip, just extract it verbatim
                 target_name = f'{get_sanitized(Path(nested_epub).stem)}.epub'
                 target_path = os.path.join(os.path.dirname(file_input), target_name)
-                with open(target_path, 'wb') as out:
-                    out.write(zf.read(nested_epub))
+                with zf.open(nested_epub, 'r') as src, open(target_path, 'wb') as out:
+                    shutil.copyfileobj(src, out, length=1024 * 1024)
             else:
                 # case 2/3 - epub contents are at root or under a single top dir
                 root_mimetype = 'mimetype' in names
@@ -971,14 +987,18 @@ def normalize_epub_zip(session_id:str, file_input:str)->str|None:
                 with zipfile.ZipFile(target_path, 'w') as out:
                     mt = zipfile.ZipInfo('mimetype')
                     mt.compress_type = zipfile.ZIP_STORED
-                    out.writestr(mt, zf.read(mimetype_name))
+                    with zf.open(mimetype_name, 'r') as src, out.open(mt, 'w') as dst:
+                        shutil.copyfileobj(src, dst, length=1024 * 1024)
                     for name in members:
                         if name == mimetype_name:
                             continue
                         arcname = name[len(strip):]
-                        if not arcname:
+                        if not arcname or not is_safe_archive_member(arcname):
                             continue
-                        out.writestr(arcname, zf.read(name), zipfile.ZIP_DEFLATED)
+                        info = zipfile.ZipInfo(arcname)
+                        info.compress_type = zipfile.ZIP_DEFLATED
+                        with zf.open(name, 'r') as src, out.open(info, 'w') as dst:
+                            shutil.copyfileobj(src, dst, length=1024 * 1024)
         session = context.get_session(session_id)
         session['ebook'] = target_path
         session['filename_noext'] = os.path.splitext(os.path.basename(target_path))[0]

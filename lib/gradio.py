@@ -1,3 +1,5 @@
+from collections.abc import Mapping
+
 from lib.core import *
 from lib.classes.gemini_agent import GeminiAgent, FREE_TIER_MODELS, DEFAULT_GEMINI_MODEL, MAX_API_KEYS, parse_api_keys, set_session_api_keys, set_session_model
 

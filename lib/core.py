@@ -501,8 +501,9 @@ def compare_checksums(session_id:str)->tuple[bool, str|None]:
         return False, error
 
 def compare_dict_keys(d1, d2):
+    """Return the first nested difference, or None when both structures match."""
     if not isinstance(d1, Mapping) or not isinstance(d2, Mapping):
-        return d1 == d2
+        return None if d1 == d2 else {"left": d1, "right": d2}
     d1_keys = set(d1.keys())
     d2_keys = set(d2.keys())
     missing_in_d2 = d1_keys - d2_keys
@@ -513,8 +514,8 @@ def compare_dict_keys(d1, d2):
             "missing_in_d1": missing_in_d1,
         }
     for key in d1_keys.intersection(d2_keys):
-        nested_result = compare_keys(d1[key], d2[key])
-        if nested_result:
+        nested_result = compare_dict_keys(d1[key], d2[key])
+        if nested_result is not None:
             return {key: nested_result}
     return None
 
@@ -3876,7 +3877,7 @@ def convert_ebook(args:dict)->tuple:
                                     else:
                                         error = f"{model} could not be extracted or mandatory files are missing"
                                 else:
-                                    error = f'{os.path.basename(f)} is not a valid model or some required files are missing'
+                                    error = f'{os.path.basename(session["custom_model"])} is not a valid model or some required files are missing'
                             except ModuleNotFoundError as e:
                                 error = f"No presets module for TTS engine '{session['tts_engine']}': {e}"
                     if session.get('voice'):
@@ -3901,7 +3902,7 @@ def convert_ebook(args:dict)->tuple:
                         if not devices['CUDA']['found']:
                             session['device'] = devices['CPU']['proc']
                             msg += f'CUDA not supported by the Torch installed!<br/>Read {default_gpu_wiki}<br/>Switching to CPU'
-                    elif session['device'] == devices['JETSON']['proc'] or session['device'] == devices['JETSON']['proc']:
+                    elif session['device'] == devices['JETSON']['proc']:
                         if not devices['JETSON']['found']:
                             session['device'] = devices['CPU']['proc']
                             msg += f'JETSON CUDA not supported by the Torch installed!<br/>Read {default_gpu_wiki}<br/>Switching to CPU'
@@ -4161,6 +4162,9 @@ def convert_ebook(args:dict)->tuple:
         return error, False
 
 def finalize_audiobook(session_id:str)->tuple:
+    session = None
+    is_preview = False
+    result = lambda msg, ok: (msg, ok)
     try:
         session = context.get_session(session_id)
         is_preview = session.get('blocks_preview', False) if session else False
@@ -4274,8 +4278,9 @@ def finalize_audiobook(session_id:str)->tuple:
             print(f'*********** Session: {session_id} **************\n{session_info}')
         return result(filename, True)
     except Exception as e:
-        session['status'] = status_tags['END']
-        reset_ebook_session(session_id, force=True, filter_keys=False)
+        if session and session.get('id', False):
+            session['status'] = status_tags['END']
+            reset_ebook_session(session_id, force=True, filter_keys=False)
         DependencyError(e)
         error = f'finalize_audiobook(): {e}'
         exception_alert(session_id, error)

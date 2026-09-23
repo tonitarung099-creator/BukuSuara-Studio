@@ -37,6 +37,8 @@ def main() -> int:
         errors.append("Custom model cache belum memvalidasi folder hasil ekstraksi")
     if "Duplicate required filenames in ZIP are not allowed" not in core_source:
         errors.append("Custom model ZIP belum menolak required filename yang ambigu")
+    if "Headless/CLI custom_model" not in core_source:
+        errors.append("Custom model headless masih berisiko menghapus ZIP asli pengguna")
     if "progress_bar(t.n / files_length" not in core_source:
         errors.append("Progress ekstraksi custom model masih berisiko melewati 100%")
     if "Missing required audio tool(s)" not in core_source:

@@ -1957,9 +1957,7 @@ class DeviceInstaller():
             return 1
 
     def check_voices(self)->int:
-        from pathlib import Path
-
-DEVICE_INSTALLER_ROOT = Path(__file__).resolve().parents[2], PurePosixPath
+        from pathlib import Path, PurePosixPath
         from urllib.parse import urlparse, unquote
         import zipfile
         from huggingface_hub import hf_hub_download

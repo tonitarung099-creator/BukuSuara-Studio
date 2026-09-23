@@ -2676,10 +2676,18 @@ Chat agent tidak mengirim seluruh isi buku. Untuk **DOCX/TXT Bahasa Indonesia**,
                                         if isinstance(args['ebook_list'], list):
                                             default_voice = session.get('voice')
                                             voice_map = dict(session.get('voice_map') or {})
-                                            clean_list = [
-                                                f for f in args['ebook_list']
-                                                if any(str(f).lower().endswith(str(ext).lower()) for ext in ebook_formats)
-                                            ]
+                                            clean_list = []
+                                            seen_paths = set()
+                                            for f in args['ebook_list']:
+                                                if not os.path.isfile(str(f)):
+                                                    continue
+                                                if not any(str(f).lower().endswith(str(ext).lower()) for ext in ebook_formats):
+                                                    continue
+                                                identity = os.path.normcase(os.path.abspath(str(f)))
+                                                if identity in seen_paths:
+                                                    continue
+                                                seen_paths.add(identity)
+                                                clean_list.append(f)
                                             clean_list.sort(key=natural_sort_key)
                                             for skipped in [f for f in args['ebook_list'] if f not in clean_list]:
                                                 show_alert(session_id, {

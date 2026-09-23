@@ -55,6 +55,8 @@ def main() -> int:
         errors.append("Exporter metadata belum membaca key date dari schema session")
     if "raw_identifier = session['metadata'].get('identifier')" not in core_source:
         errors.append("Exporter metadata belum membaca identifier EPUB dari schema session")
+    if "session['language_iso1'] = args.get('language_iso1')" not in core_source:
+        errors.append("ISO1 None masih berisiko berubah menjadi string 'None'")
     if "return _fail(msg)" not in core_source or "return _fail(error)" not in core_source:
         errors.append("Finalize masih bisa meninggalkan status CONVERTING setelah pembatalan/error awal")
     if "clean_title = ffmeta_escape(" not in core_source:

@@ -49,6 +49,10 @@ def main() -> int:
         errors.append("Cleanup session lama masih berisiko menghapus sesi aktif")
     if "def commit_checksum(" not in core_source or "without committing a changed value prematurely" not in core_source:
         errors.append("Checksum sumber masih berisiko dikomit sebelum parse berhasil")
+    if "def ffmeta_escape(" not in core_source:
+        errors.append("Metadata FFmpeg belum meng-escape karakter khusus")
+    if "clean_title = ffmeta_escape(" not in core_source:
+        errors.append("Judul chapter FFmpeg belum memakai escaping metadata yang konsisten")
     if "def preprocess_gemini_pronunciation(" not in core_source:
         errors.append("Pipeline DOCX/TXT belum terhubung ke Gemini pronunciation")
     if "cover_result is not False" not in core_source:

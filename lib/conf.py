@@ -134,6 +134,20 @@ voices_dir = os.path.abspath('voices')
 voices_url = 'https://huggingface.co/datasets/ebook2audiobook/E2A-Voices/resolve/main/voices.zip?download=true'
 tts_dir = os.path.join(models_dir, 'tts')
 components_dir = os.path.abspath('components')
+
+# Portable runtime directories must exist before tempfile/cache consumers run.
+# Do not rely on empty directories surviving ZIP extraction or cleanup tools.
+for runtime_dir in (
+    tmp_dir,
+    run_dir,
+    gradio_cache_dir,
+    models_dir,
+    ebooks_dir,
+    voices_dir,
+    tts_dir,
+):
+    os.makedirs(runtime_dir, exist_ok=True)
+
 tempfile.tempdir = run_dir
 
 # ---------------------------------------------------------------------

@@ -75,6 +75,10 @@ def main() -> int:
         errors.append("FFmpeg merge/export belum terhubung ke cancellation session")
     if "def preprocess_gemini_pronunciation(" not in core_source:
         errors.append("Pipeline DOCX/TXT belum terhubung ke Gemini pronunciation")
+    if "def disambiguate_directory_ebook_name(" not in core_source:
+        errors.append("Directory Mode belum melindungi cache/output dari stem ebook yang sama")
+    if "ebook_name = disambiguate_directory_ebook_name" not in core_source:
+        errors.append("Disambiguasi nama Directory Mode belum terhubung ke convert_ebook")
     if "def session_has_active_client(" not in core_source:
         errors.append("Sesi GUI belum punya guard untuk client aktif ganda")
     if "cover_result is not False" not in core_source:

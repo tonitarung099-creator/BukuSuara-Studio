@@ -235,6 +235,8 @@ def main() -> int:
         errors.append("Launcher masih mengecek build tools pada env yang sudah current")
     if 'if not "%PROVISIONED_VERSION%"=="%APP_VERSION%" (' not in launcher_source:
         errors.append("Versi .provisioned belum dipakai untuk reprovision dependency")
+    if 'if exist "%SAFE_SCRIPT_DIR%\\%PYTHON_ENV%" if not exist "%SAFE_SCRIPT_DIR%\\%PYTHON_ENV%\\.provisioned" (' not in launcher_source:
+        errors.append("Env tanpa .provisioned tidak lagi direcreate dengan aman")
 
     requirements = Path("requirements.txt").read_text(encoding="utf-8")
     if "./ext/py/demucs" in requirements:

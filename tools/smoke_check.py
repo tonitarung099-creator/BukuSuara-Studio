@@ -221,8 +221,8 @@ def main() -> int:
         errors.append("Pemeriksaan dependency Windows belum mereset daftar paket yang hilang")
     if 'Portable mode: never create Start Menu/Desktop shortcuts' not in launcher_source:
         errors.append("Launcher GUI masih memiliki side-effect installer pada mode portable")
-    if 'if /i "%HEADLESS_FOUND%"=="%ARGS%" (' not in launcher_source:
-        errors.append("Deteksi --headless launcher masih terbalik")
+    if 'if "%HEADLESS_REQUESTED%"=="0" (' not in launcher_source:
+        errors.append("Deteksi --headless launcher belum memakai flag hasil parser")
     if 'reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall' in launcher_source:
         errors.append("Launcher portable masih menulis registry uninstall")
     if ':make_shortcut' in launcher_source:

@@ -2670,7 +2670,7 @@ Chat agent tidak mengirim seluruh isi buku. Untuk **DOCX/TXT Bahasa Indonesia**,
                                             voice_map = dict(session.get('voice_map') or {})
                                             clean_list = [
                                                 f for f in args['ebook_list']
-                                                if any(f.endswith(ext) for ext in ebook_formats)
+                                                if any(str(f).lower().endswith(str(ext).lower()) for ext in ebook_formats)
                                             ]
                                             clean_list.sort(key=natural_sort_key)
                                             for skipped in [f for f in args['ebook_list'] if f not in clean_list]:
@@ -2740,7 +2740,8 @@ Chat agent tidak mengirim seluruh isi buku. Untuk **DOCX/TXT Bahasa Indonesia**,
                         else:
                             return gr.update()
                 except Exception as e:
-                    session['status'] = status_tags['END']
+                    if session and session.get('id', False):
+                        session['status'] = status_tags['END']
                     error = f'_start_conversion(): {e}'
                     exception_alert(session_id, error)
                     return gr.update(value=error)

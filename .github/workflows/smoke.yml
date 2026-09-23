@@ -26,3 +26,5 @@ jobs:
         run: python tools/test_gemini_pronunciation.py
       - name: Audit responsive UI
         run: python tools/ui_audit.py
+      - name: Audit Gradio callback arity
+        run: python tools/callback_audit.py

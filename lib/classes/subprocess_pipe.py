@@ -4,7 +4,15 @@ from collections.abc import Callable
 
 class SubprocessPipe:
 
-    def __init__(self, cmd:list[str], is_gui_process:bool, total_duration:float, msg:str='Processing', on_progress:Callable[[float], None]|None=None)->None:
+    def __init__(
+        self,
+        cmd:list[str],
+        is_gui_process:bool,
+        total_duration:float,
+        msg:str='Processing',
+        on_progress:Callable[[float], None]|None=None,
+        should_stop:Callable[[], bool]|None=None,
+    )->None:
         self.cmd = cmd
         self.is_gui_process = is_gui_process
         self.total_duration = total_duration
@@ -12,11 +20,22 @@ class SubprocessPipe:
         self.process = None
         self._stop_requested = False
         self.on_progress = on_progress
+        self.should_stop = should_stop
         self.progress_bar = False
         if self.is_gui_process:
             self.progress_bar = gr.Progress(track_tqdm=False)
         self.result = self._run_process()
         
+    def _cancellation_requested(self)->bool:
+        if self._stop_requested:
+            return True
+        if self.should_stop is None:
+            return False
+        try:
+            return bool(self.should_stop())
+        except Exception:
+            return False
+
     def _emit_progress(self, percent:float)->None:
         if self.on_progress is not None:
             self.on_progress(percent)
@@ -86,6 +105,9 @@ class SubprocessPipe:
                 stderr_thread.start()
 
                 while True:
+                    if self._cancellation_requested():
+                        self.stop()
+                        break
                     try:
                         line = stderr_queue.get(timeout=0.1)
                     except queue.Empty:
@@ -111,6 +133,9 @@ class SubprocessPipe:
                     buffer = b''
                     last_percent = 0.0
                     while True:
+                        if self._cancellation_requested():
+                            self.stop()
+                            break
                         chunk = self.process.stdout.read(1024)
                         if not chunk:
                             break

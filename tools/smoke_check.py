@@ -104,6 +104,8 @@ def main() -> int:
         errors.append("Disambiguasi nama Directory Mode belum terhubung ke convert_ebook")
     if "ebook_list = list(ebook_list_raw)" not in core_source:
         errors.append("Disambiguasi Directory Mode belum mendukung session list proxy")
+    if "batch_ebook_list=args.get('ebook_list')" not in core_source:
+        errors.append("Collision guard masih bergantung pada queue session yang menyusut")
     if "def session_has_active_client(" not in core_source:
         errors.append("Sesi GUI belum punya guard untuk client aktif ganda")
     if "cover_result is not False" not in core_source:

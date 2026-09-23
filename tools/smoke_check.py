@@ -59,6 +59,8 @@ def main() -> int:
         errors.append("Path FFmpeg concat belum aman untuk apostrof")
     if 'f.write(f"file {ffconcat_quote_path(path)}' not in core_source:
         errors.append("Generator FFmpeg concat masih menulis path mentah")
+    if "should_stop=lambda: bool(session.get('cancellation_requested'))" not in core_source:
+        errors.append("FFmpeg merge/export belum terhubung ke cancellation session")
     if "def preprocess_gemini_pronunciation(" not in core_source:
         errors.append("Pipeline DOCX/TXT belum terhubung ke Gemini pronunciation")
     if "cover_result is not False" not in core_source:
@@ -140,6 +142,12 @@ def main() -> int:
         errors.append("GPU probe masih mencari detect_gpus.py dari working directory")
     if "Unsafe voice ZIP path" not in device_installer_source:
         errors.append("Ekstraksi ZIP voice belum melindungi path traversal")
+
+    subprocess_source = Path("lib/classes/subprocess_pipe.py").read_text(encoding="utf-8")
+    if "def _cancellation_requested(" not in subprocess_source or "self.stop()" not in subprocess_source:
+        errors.append("SubprocessPipe belum dapat menghentikan proses saat cancel")
+    if "self.process.wait(timeout=2)" not in subprocess_source:
+        errors.append("SubprocessPipe terminate belum punya fallback kill")
 
     requirements = Path("requirements.txt").read_text(encoding="utf-8")
     if "./ext/py/demucs" in requirements:

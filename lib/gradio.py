@@ -1,5 +1,5 @@
 from lib.core import *
-from lib.classes.gemini_agent import GeminiAgent, FREE_TIER_MODELS, DEFAULT_GEMINI_MODEL, parse_api_keys
+from lib.classes.gemini_agent import GeminiAgent, FREE_TIER_MODELS, DEFAULT_GEMINI_MODEL, MAX_API_KEYS, parse_api_keys
 
 def build_interface(args:dict)->gr.Blocks:
     from lib.classes.tts_engines.common.preset_loader import load_engine_presets
@@ -24,6 +24,10 @@ def build_interface(args:dict)->gr.Blocks:
         fine_tuned_options = []
         audiobook_options = []
         options_output_split_hours = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
+
+        def _count_gemini_keys(api_keys_text:str)->str:
+            keys = parse_api_keys(api_keys_text)
+            return f"{len(keys)}/{MAX_API_KEYS} API key terdeteksi"
 
         def _run_gemini_agent(session_id:str, api_keys_text:str, model:str, prompt:str, history:list|None)->tuple:
             history = list(history or [])
@@ -936,17 +940,24 @@ def build_interface(args:dict)->gr.Blocks:
 Agen dapat membaca **setting ringkas** BukuSuara dan mengubah setting aman yang sudah diberi tool lokal.
 Isi buku/file **tidak dikirim otomatis** ke Gemini. Hanya perintah yang Anda ketik, riwayat chat ringkas, dan setting aplikasi yang dikirim.
 
-> API key hanya digunakan saat request berjalan. Pisahkan beberapa key dengan koma. Rotasi key membantu hanya bila kuota project-nya berbeda; limit Gemini berlaku per project.
+> Maksimal **100 API key**. Pisahkan key dengan koma, titik koma, atau baris baru. Saat key kena limit/error sementara, agent otomatis mencoba key berikutnya. Limit Gemini tetap berlaku per project.
                         ''')
                         with gr.Row():
-                            gr_gemini_api_keys = gr.Textbox(
-                                label='API Key Gemini',
-                                type='password',
-                                placeholder='AIza... , AIza... (opsional beberapa key)',
-                                lines=1,
-                                interactive=True,
-                                scale=2
-                            )
+                            with gr.Column(scale=2):
+                                gr_gemini_api_keys = gr.Textbox(
+                                    label='API Key Gemini (maks. 100)',
+                                    type='password',
+                                    placeholder='Tempel hingga 100 key; pisahkan dengan koma atau baris baru',
+                                    lines=4,
+                                    max_lines=8,
+                                    interactive=True
+                                )
+                                gr_gemini_key_count = gr.Textbox(
+                                    label='Jumlah API',
+                                    value=f'0/{MAX_API_KEYS} API key terdeteksi',
+                                    interactive=False,
+                                    lines=1
+                                )
                             gr_gemini_model = gr.Dropdown(
                                 label='Model',
                                 choices=FREE_TIER_MODELS,
@@ -984,6 +995,12 @@ Isi buku/file **tidak dikirim otomatis** ke Gemini. Hanya perintah yang Anda ket
                         gemini_inputs = [
                             gr_session, gr_gemini_api_keys, gr_gemini_model, gr_gemini_prompt, gr_gemini_chat
                         ]
+                        gr_gemini_api_keys.change(
+                            fn=_count_gemini_keys,
+                            inputs=[gr_gemini_api_keys],
+                            outputs=[gr_gemini_key_count],
+                            queue=False
+                        )
                         gr_gemini_send.click(
                             fn=_run_gemini_agent,
                             inputs=gemini_inputs,

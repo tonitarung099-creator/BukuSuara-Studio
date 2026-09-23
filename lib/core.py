@@ -3428,7 +3428,7 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
                         if session['cancellation_requested']:
                             return None
                         path = Path(session['chapters_dir']) / file
-                        f.write(f"file '{path.as_posix()}'\n")
+                        f.write(f"file {ffconcat_quote_path(path)}\n")
                 merged_audio = Path(session['process_dir']) / f"{get_sanitized(session['metadata']['title'])}_part{part_idx+1:0{pad_width}d}.{default_audio_proc_format}"
                 result = assemble_audio_chunks(
                     concat_list,
@@ -3442,7 +3442,15 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
                     return None
                 metadata_file = Path(session['process_dir']) / f'metadata_part{part_idx+1:0{pad_width}d}.txt'
                 part_chapters = [(chapter_files[i], chapter_titles[i]) for i in indices]
-                _generate_ffmpeg_metadata(part_chapters, str(metadata_file), default_audio_proc_format)
+                metadata_result = _generate_ffmpeg_metadata(
+                    part_chapters,
+                    str(metadata_file),
+                    default_audio_proc_format,
+                    part_num=part_idx + 1,
+                )
+                if not metadata_result:
+                    print(f'Metadata generation failed for part {part_idx + 1}.')
+                    return None
                 final_file = os.path.join(
                     session['audiobooks_dir'],
                     f"{Path(session['final_name']).stem}_part{part_idx+1:0{pad_width}d}.{session['output_format']}"
@@ -3459,7 +3467,7 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
                     if session['cancellation_requested']:
                         return None
                     path = Path(session['chapters_dir']) / file
-                    f.write(f"file '{path.as_posix()}'\n")
+                    f.write(f"file {ffconcat_quote_path(path)}\n")
             result = assemble_audio_chunks(
                 concat_list,
                 merged_audio,
@@ -3471,7 +3479,14 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
                 return None
             metadata_file = os.path.join(session['process_dir'], 'metadata.txt')
             chapters_zip = list(zip(chapter_files, chapter_titles))
-            _generate_ffmpeg_metadata(chapters_zip, metadata_file, default_audio_proc_format)
+            metadata_result = _generate_ffmpeg_metadata(
+                chapters_zip,
+                metadata_file,
+                default_audio_proc_format,
+            )
+            if not metadata_result:
+                print('Metadata generation failed.')
+                return None
             final_file = os.path.join(session['audiobooks_dir'], session['final_name'])
             if _export_audio(merged_audio, metadata_file, final_file):
                 exported_files.append(final_file)

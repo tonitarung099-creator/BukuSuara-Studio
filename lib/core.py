@@ -3112,28 +3112,33 @@ def combine_audio_chapters(session_id:str)->list[str]|None:
                 ffmpeg_metadata += f"{tag('description')}={ffmeta_escape(session['metadata']['description'])}\n"
             if session['metadata'].get('publisher') and (is_mp4_like or is_mp3):
                 ffmpeg_metadata += f"{tag('publisher')}={ffmeta_escape(session['metadata']['publisher'])}\n"
-            if session['metadata'].get('published'):
-                try:
-                    if '.' in session['metadata']['published']:
-                        year = datetime.strptime(session['metadata']['published'], '%Y-%m-%dT%H:%M:%S.%f%z').year
-                    else:
-                        year = datetime.strptime(session['metadata']['published'], '%Y-%m-%dT%H:%M:%S%z').year
-                except Exception:
-                    year = datetime.now().year
-            else:
-                year = datetime.now().year
+            published_value = session['metadata'].get('published') or session['metadata'].get('date')
+            year = datetime.now().year
+            if published_value:
+                match = re.search(r'(?<!\d)(\d{4})(?!\d)', str(published_value))
+                if match:
+                    candidate_year = int(match.group(1))
+                    if 1000 <= candidate_year <= 2999:
+                        year = candidate_year
             if is_vorbis:
                 ffmpeg_metadata += f"{tag('date')}={year}\n"
             else:
                 ffmpeg_metadata += f"{tag('year')}={year}\n"
-            if session['metadata'].get('identifiers') and isinstance(session['metadata']['identifiers'], dict):
-                if is_mp3 or is_mp4_like:
-                    isbn = session['metadata']['identifiers'].get('isbn')
-                    if isbn:
-                        ffmpeg_metadata += f"{tag('isbn')}={ffmeta_escape(isbn)}\n"
-                    asin = session['metadata']['identifiers'].get('mobi-asin')
-                    if asin:
-                        ffmpeg_metadata += f"{tag('asin')}={ffmeta_escape(asin)}\n"
+            identifiers = session['metadata'].get('identifiers')
+            identifiers = identifiers if isinstance(identifiers, dict) else {}
+            raw_identifier = session['metadata'].get('identifier')
+            if is_mp3 or is_mp4_like:
+                isbn = identifiers.get('isbn')
+                asin = identifiers.get('mobi-asin')
+                if not isbn and raw_identifier:
+                    raw_id = str(raw_identifier).strip()
+                    compact_id = re.sub(r'[^0-9Xx]', '', raw_id)
+                    if raw_id.lower().startswith('urn:isbn:') or len(compact_id) in (10, 13):
+                        isbn = raw_id.split(':')[-1].strip() if ':' in raw_id else raw_id
+                if isbn:
+                    ffmpeg_metadata += f"{tag('isbn')}={ffmeta_escape(isbn)}\n"
+                if asin:
+                    ffmpeg_metadata += f"{tag('asin')}={ffmeta_escape(asin)}\n"
             start_time = 0
             total = len(part_chapters)
             progress_desc = f'Metadata Part {part_num}' if part_num is not None else 'Metadata'

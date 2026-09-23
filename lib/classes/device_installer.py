@@ -1780,7 +1780,7 @@ class DeviceInstaller():
             return False
 
         def _probe_gpus()->dict:
-            script = os.path.abspath('./detect_gpus.py')
+            script = str(DEVICE_INSTALLER_ROOT / 'detect_gpus.py')
             try:
                 proc = subprocess.run(
                     [sys.executable, script],
@@ -1957,12 +1957,14 @@ class DeviceInstaller():
             return 1
 
     def check_voices(self)->int:
-        from pathlib import Path, PurePosixPath
+        from pathlib import Path
+
+DEVICE_INSTALLER_ROOT = Path(__file__).resolve().parents[2], PurePosixPath
         from urllib.parse import urlparse, unquote
         import zipfile
         from huggingface_hub import hf_hub_download
         from tqdm import tqdm
-        voices_dir:Path = Path('./voices')
+        voices_dir:Path = DEVICE_INSTALLER_ROOT / 'voices'
         def has_wav()->bool:
             return any(voices_dir.rglob('*.wav'))
         try:
@@ -1974,7 +1976,9 @@ class DeviceInstaller():
             repo_id:str = f"{parts[i+1]}/{parts[i+2]}"
             r:int = parts.index('resolve')
             filename:str = '/'.join(parts[r+2:])
-            zip_path:Path = Path(hf_hub_download(repo_id=repo_id, filename=filename, repo_type='dataset', local_dir='.'))
+            download_dir = DEVICE_INSTALLER_ROOT / 'run' / 'downloads'
+            download_dir.mkdir(parents=True, exist_ok=True)
+            zip_path:Path = Path(hf_hub_download(repo_id=repo_id, filename=filename, repo_type='dataset', local_dir=str(download_dir)))
             print(f'Downloaded {zip_path.stat().st_size / (1024*1024):.1f} MB to {zip_path}')
             with zipfile.ZipFile(zip_path, 'r') as zf:
                 members:list = zf.infolist()

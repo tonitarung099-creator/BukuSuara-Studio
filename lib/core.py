@@ -3890,7 +3890,7 @@ def convert_ebook(args:dict)->tuple:
             session['blocks_preview'] = bool(args['blocks_preview']) if args.get('blocks_preview') else False
             session['device'] = str(args['device'])
             session['language'] = str(args['language'])
-            session['language_iso1'] = str(args['language_iso1'])
+            session['language_iso1'] = args.get('language_iso1')
             session['translate_enabled'] = bool(args.get('translate_enabled', False))
             session['translate'] = args.get('translate')
             session['translate_iso1'] = args.get('translate_iso1')

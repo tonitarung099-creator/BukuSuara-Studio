@@ -102,6 +102,8 @@ def main() -> int:
         errors.append("Core masih bisa menerima directory sebagai ebook source")
     if "ebook_name = disambiguate_directory_ebook_name" not in core_source:
         errors.append("Disambiguasi nama Directory Mode belum terhubung ke convert_ebook")
+    if "ebook_list = list(ebook_list_raw)" not in core_source:
+        errors.append("Disambiguasi Directory Mode belum mendukung session list proxy")
     if "def session_has_active_client(" not in core_source:
         errors.append("Sesi GUI belum punya guard untuk client aktif ganda")
     if "cover_result is not False" not in core_source:
